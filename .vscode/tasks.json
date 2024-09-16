@@ -1,0 +1,29 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Assemble and Run",
+      "type": "shell",
+      "command": "dosbox",
+      "args": [
+        "-c",
+        "mount c C:\\TASM\\",
+        "-c",
+        "c:",
+        "-c",
+        "TASM.EXE C:\\TASM\\y2s1-cosa-assignment\\assign.asm",
+        "-c",
+        "TLINK.EXE assign.obj",
+        "-c",
+        "assign.exe",
+        // "-c",
+        // "exit"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": []
+    }
+  ]
+}
