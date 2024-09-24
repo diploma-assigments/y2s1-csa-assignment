@@ -6,7 +6,6 @@ TITLE INVENTORY SYSTEM
 
     DB_TEMP				DB      ?         ; Temporary data (could be for username/password)
     DW_TEMP				DW      ?
-=======
 
 	x EQU 4 ; No. of Attributes in Item
 	y EQU 20 ; No. Of Items
@@ -24,7 +23,8 @@ TITLE INVENTORY SYSTEM
 
 	ITEMMENU_OPTIONS		DB  	"1 - Add Item", CRLF, "2 - Modify item", CRLF, "3 - Delete item", CRLF, "0 - Exit", CRLF, "$"
 	ITEMMODIFYMENU			DB  	"1 - Modify Name", CRLF,"2 - Modify Quantity", CRLF,"3 - Modify UnitPrice", CRLF, "0 - Exit", CRLF, "$"
-	STOCK_REPORT_HEADER		DB  	LongLine, "|ITEM ID | Name        |Count | UnitPrice |", CRLF,"$"
+	STOCK_REPORT_HEADER     DB      "--------------------------------", CRLF
+                        	DB      "| ITEM ID | Name        | Count | UnitPrice |", CRLF, "$"
 	STOCK_EACH				DB		"|        |             |      |           |", CRLF,"$"					;8, 13, 6, 11
     
 ;==========================================================================================================
