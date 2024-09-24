@@ -11,27 +11,27 @@ MAIN PROC
     MOV AX, @DATA
     MOV DS, AX
 
-    ; write to file "staff.txt"
-    MOV AH, 40h             ; DOS function to create a file
+    ; Create the file
+    MOV AH, 3Ch             ; DOS function to create a file
     MOV CX, 0               ; File attributes (normal)
     LEA DX, FILENAME        ; Load the file name
-    INT 21h                 ; DOS interrupt to create the file
-    JC ERROR                ; Jump if there's an error
+    INT 21h                 ; Call DOS
+    JC ERROR                ; Jump if there is an error
     MOV FILE_HANDLE, AX     ; Store the file handle
 
-    ; Write "abc" to the file
-    MOV AH, 40h             ; DOS function to write to file
+    ; Write to the file
+    MOV AH, 40h             ; DOS function to write to a file
     MOV BX, FILE_HANDLE     ; File handle
-    LEA DX, DATA_TO_WRITE   ; Load the address of the data
-    MOV CX, 3               ; Number of bytes to write
-    INT 21h                 ; DOS interrupt to write
-    JC ERROR                ; Jump if there's an error
+    LEA DX, DATA_TO_WRITE   ; Load the address of the data buffer
+    MOV CX, 3               ; Number of bytes to write ("abc" is 3 bytes)
+    INT 21h                 ; Call DOS
+    JC ERROR                ; Jump if there is an error
 
     ; Close the file
-    MOV AH, 3Eh             ; DOS function to close file
+    MOV AH, 3Eh             ; DOS function to close the file
     MOV BX, FILE_HANDLE     ; File handle
-    INT 21h                 ; DOS interrupt to close the file
-    JC ERROR                ; Jump if there's an error
+    INT 21h                 ; Call DOS
+    JC ERROR                ; Jump if there is an error
 
     ; Exit the program
     MOV AX, 4C00h
