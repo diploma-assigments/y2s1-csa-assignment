@@ -15,22 +15,38 @@ TITLE ITEM MENU
 
     UNIT_PRICE              DB      "123456", '$'  ; String to check for comma
     CONTAIN_STRING          DB      "xxxxxx", '$'
+    CONTAIN_STRING2         DB      "xxxxxx", '$'
+    STRING_BUFFER DB 21 DUP(0) ; Allocate space for the string (20 chars + 1 for null terminator)
 
 	x EQU 4 ; No. of Attributes in Item
 	y EQU 20 ; No. Of Items
 	
 	ITEM_ARRAY DB x * y DUP(?) ; Allocate space for the 2D array
 
-    CRLF                    EQU     0DH, 0AH 
-	LongLine				DB  	"---------------------------------------------", CRLF, "$"
+    CRLF                    EQU     0DH, 0AH
+    ZERO                    DB     "0", '$'
+	LONGLINE				DB  	"---------------------------------------------", CRLF, "$"
+
+    SELECTED_OPTION         DB      ?         ; Store selected option
+    PROMPT_MSG              DB      CRLF, "Select an option: ", '$'
 
 
     LENGTH_OF_UNIT_PRICE    EQU     7  ; Length of "123,456"
     COMMA_FOUND_MSG         DB      "Comma found at index: ", '$'
     NO_COMMA_FOUND_MSG      DB      "No comma found in UNIT_PRICE.", '$'
 
+    ; ITEM_MENU OPTIONS
     ITEMMENU_OPTIONS		DB  	"1 - Add Item", CRLF, "2 - Modify item", CRLF, "3 - Delete item", CRLF, "0 - Exit", CRLF, "$"
-	ITEMMODIFYMENU			DB  	"1 - Modify Name", CRLF,"2 - Modify Quantity", CRLF,"3 - Modify UnitPrice", CRLF, "0 - Exit", CRLF, "$"
+
+    ; ADD ITEM
+    ITEM_NAME_PROMPT        DB      CRLF,"Enter ITEM Name      : $"
+    ITEM_UNITPRICE_PROMPT   DB      CRLF,"Enter ITEM Unit Price: $"
+    ITEM_QUANTITY_PROMPT    DB      CRLF,"Enter ITEM Quantity  : $"
+
+    ; MODIFY MENU
+	ITEMMODIFY_OPTIONS		DB  	"1 - Modify Name", CRLF,"2 - Modify Quantity", CRLF,"3 - Modify UnitPrice", CRLF, "0 - Exit", CRLF, "$"
+
+    ; STOCK_REPORT
 	STOCK_REPORT_HEADER     DB      "---------------------------------------------", CRLF
                         	DB      "| ITEM ID | Name        | Count | UnitPrice |", CRLF, "$"
 	STOCK_EACH				DB		"|         |             |       |           |", CRLF, "$"					;9, 13, 6, 11
@@ -41,15 +57,138 @@ MAIN PROC FAR
     MOV     AX, @DATA              ; Load data segment address to AX
     MOV     DS, AX                 ; Initialize data segment
 
-    CALL DOUBLE_VALUE
+    ; CALL DOUBLE_VALUE
 
-    LEA     DX, UNIT_PRICE
-    CALL    PRINT
+    ; LEA     DX, UNIT_PRICE
+    ; CALL    PRINT
+MAIN_START:
+    CALL    ITEM_MENU
+    ; CALL    CLS
+    ; LEA     SI,TESTSTR1
+    ; LEA     DI,CONTAIN_STRING
+    ; CALL    COPY_STRING
+    ; LEA     SI,TESTSTR2
+    ; LEA     DI,CONTAIN_STRING2
+    ; CALL    COPY_STRING
+    ; MOV     AL,0
+    ; LEA     DX, CONTAIN_STRING
+    ; CALL    PRINT
+
+    ; LEA     DX, CONTAIN_STRING2
+    ; CALL    PRINT
+
+    ; CALL    COMPARE_STRINGS
+    ; CMP     AL,1
+    ; JE      MAIN_START
+
+
+
 
     ; Exit the program
     MOV     AX, 4C00H              ; Terminate program
     INT     21H
 MAIN ENDP
+; ITEM_MENU
+ITEM_MENU PROC NEAR
+ITEM_MENU_START:
+    CALL    CLS
+    LEA     DX, LONGLINE
+    CALL    PRINT
+    LEA     DX, ITEMMENU_OPTIONS
+    CALL    PRINT
+    LEA     DX, PROMPT_MSG
+    CALL    PRINT
+    CALL    GET_INPUT
+    MOV     SELECTED_OPTION, AL
+
+    CMP     SELECTED_OPTION, 30H
+    JE      ITEM_MENU_OPTION0
+    CMP     SELECTED_OPTION, 31H
+    JE      ITEM_MENU_OPTION1
+    CMP     SELECTED_OPTION, 32H
+    JE      ITEM_MENU_OPTION2
+    CMP     SELECTED_OPTION, 33H
+    JE      ITEM_MENU_OPTION3
+    JMP     ITEM_MENU_START
+
+ITEM_MENU_OPTION1:
+    CALL    ADD_ITEM_MENU
+    JMP     ITEM_MENU_OPTION0
+ITEM_MENU_OPTION2:
+    CALL    MODIFY_ITEM_MENU
+    JMP     ITEM_MENU_OPTION0
+
+ITEM_MENU_OPTION3:
+    CALL    DELETE_ITEM_MENU
+    JMP     ITEM_MENU_OPTION0
+ITEM_MENU_OPTION0:
+    RET
+ITEM_MENU ENDP
+
+; ADD_ITEM_MENU
+ADD_ITEM_MENU PROC NEAR
+ADD_ITEM_MENU_START:
+    CALL    CLS
+ITEM_PROMPT1:
+    ; READ A STRING
+    LEA     DX, ITEM_NAME_PROMPT
+    CALL    PRINT
+    MOV     BX, OFFSET STRING_BUFFER
+    CALL    GET_STRING
+    LEA     DX, STRING_BUFFER
+    CALL    PRINT
+
+    ; SI,DI for copy, and twice, then compare?
+    LEA     SI, STRING_BUFFER
+    LEA     DI, CONTAIN_STRING
+    CALL    COPY_STRING
+    LEA     SI, ZERO
+    LEA     DI, CONTAIN_STRING2
+    LEA     DX, CONTAIN_STRING
+    CALL    PRINT
+    LEA     DX, CONTAIN_STRING2
+    CALL    PRINT
+    CALL    COMPARE_STRINGS
+    CMP     AL, 1
+    JE      ADD_ITEM_EXIT
+
+    ; TODO: ADD CONTAIN STRING VALUE INTO AN ARRAY OR TXT FILE
+    ; TODO: MAYBE CHECK IF NAME ALR TAKEN? OR IF ITS A VALID NAME
+;------
+    CALL    CLEAR_PROMPT
+
+    JMP     ITEM_PROMPT1
+ITEM_PROMPT2:
+
+ITEM_PROMPT3:
+
+ADD_ITEM_EXIT:
+    RET
+ADD_ITEM_MENU ENDP
+
+; MODIFY_ITEM_MENU
+MODIFY_ITEM_MENU PROC NEAR
+MODIFY_ITEM_MENU_START:
+    CALL    CLS
+    LEA     DX, LONGLINE
+    CALL    PRINT
+    LEA     DX, ITEMMODIFY_OPTIONS
+    CALL    PRINT
+    LEA     DX, PROMPT_MSG
+    CALL    PRINT
+    CALL    GET_INPUT
+    MOV     SELECTED_OPTION, AL
+
+
+    RET
+MODIFY_ITEM_MENU ENDP
+
+; DELETE_ITEM_MENU
+DELETE_ITEM_MENU PROC NEAR
+    RET
+DELETE_ITEM_MENU ENDP
+
+; GENERAL PURPOSE FUNCTIONS
 ;==========================================================================================================
 ; Generalized procedure to copy a string from source to destination
 ; Parameters: 
@@ -74,6 +213,38 @@ COPY_DONE:
     POP SI                       ; Restore SI
     RET
 COPY_STRING ENDP
+
+;==========================================================================================================
+IS_DIGITS PROC NEAR
+    ; Parameters:
+    ;   SI = Address of the string (CONTAIN_STRING)
+    
+    MOV     SI, OFFSET CONTAIN_STRING ; Load address of the string
+
+    MOV     AL, 0                  ; Assume no digits found (AL = 0)
+    
+CHECK_DIGIT_LOOP:
+    MOV     BL, [SI]               ; Load current character from the string
+    CMP     BL, '$'                ; Check for the string terminator
+    JE      CHECK_DONE             ; If terminator, finish checking
+
+    ; Check if the character is a digit
+    CMP     BL, '0'                ; Check if character >= '0'
+    JL      NOT_DIGIT              ; If less than '0', it's not a digit
+    CMP     BL, '9'                ; Check if character <= '9'
+    JG      NOT_DIGIT              ; If greater than '9', it's not a digit
+
+    MOV     AL, 1                  ; Digit found, set AL to 1
+    JMP     CHECK_DONE             ; Finish checking
+
+NOT_DIGIT:
+    INC     SI                     ; Move to the next character
+    JMP     CHECK_DIGIT_LOOP       ; Repeat the loop
+
+CHECK_DONE:
+    RET
+IS_DIGITS ENDP
+
 ;==========================================================================================================
 ; Print a numerical Value with decimel points
 DOUBLE_VALUE PROC NEAR
@@ -147,7 +318,7 @@ DOUBLE_VALUE ENDP
 CONTAINS PROC
     MOV     SI, 0                  ; Start index at 0
 
-CHECK_LOOP:
+CHECK_CONTAIN_LOOP:
     MOV     AL, CONTAIN_STRING[SI] ; Load current character from string
     CMP     AL, CL                 ; Compare with character to find
     JE      FOUND                  ; Jump if equal (found character)
@@ -155,7 +326,7 @@ CHECK_LOOP:
     JE      NOT_FOUND              ; Jump to not found if we reach terminator
 
     INC     SI                     ; Move to next character
-    JMP     CHECK_LOOP             ; Repeat loop
+    JMP     CHECK_CONTAIN_LOOP             ; Repeat loop
 
 NOT_FOUND:
     ; If the character is not found, set AL to 0 (false)
@@ -168,7 +339,7 @@ FOUND:
     RET
 CONTAINS ENDP
 ;==========================================================================================================
-; STRLEN (ASSUME DX contain String)
+; STRLEN (ASSUME CONTAIN_STRING contain String)
 StrLen PROC
     XOR     AL, AL                  ; Clear AL to store the length
     MOV     SI, 0                   ; Start index at 0
@@ -188,7 +359,7 @@ Done:
 StrLen ENDP
 
 ;==========================================================================================================
-; Function to find the index of which a Char first appear (Assume DX have String, Assume ContainsChar have char), Return -1 if none
+; Function to find the index of which a Char first appear (Assume CONTAIN_STRING have String, Assume ContainsChar have char), Return -1 if none
 INDEX_OF PROC
     MOV     SI, 0                  ; Start index at 0
     MOV     CX, 0                  ; Initialize CX for the index
@@ -215,6 +386,99 @@ FOUND_OCCURENCE:
 INDEX_OF ENDP
 
 ;==========================================================================================================
+; Assumes DS points to the data segment and that the strings are null-terminated.
+; Parameters:
+;   - SI: Address of the first string (STRING1)
+;   - DI: Address of the second string (STRING2)
+; Returns:
+
+COMPARE_STRINGS PROC NEAR
+    MOV     AL, 1                  ; Assume strings are equal
+    MOV     SI, 0                  ; Reset index for comparison
+
+COMPARE_LOOP:
+    MOV     BL, CONTAIN_STRING[SI] ; Load current character from first string
+    MOV     CL, CONTAIN_STRING2[SI] ; Load current character from second string
+    CMP     BL, CL                 ; Compare characters
+    JNE     STRINGS_NOT_EQUAL      ; Jump if not equal
+
+    CMP     BL, '$'                ; Check if end of first string
+    JE      STRINGS_EQUAL          ; Jump if equal (both strings ended)
+
+    CMP     CL, '$'                ; Check if end of second string
+    JE      STRINGS_NOT_EQUAL      ; Jump if not equal (one string ended)
+
+    INC     SI                     ; Increment index
+    JMP     COMPARE_LOOP           ; Repeat loop
+
+STRINGS_NOT_EQUAL:
+    MOV     AL, 0                  ; Set AL to 0 for not equal
+    RET
+
+STRINGS_EQUAL:
+    RET
+COMPARE_STRINGS ENDP
+
+;==========================================================================================================
+CLEAR_PROMPT PROC NEAR
+; Clear left until prompt message
+    MOV     AH, 02H                 ; Function to set cursor position
+    MOV     DL, 0                    ; Row (current row)
+    MOV     DH, 0                    ; Column (leftmost position)
+    INT     10H                      ; Set cursor position
+
+    MOV     AH, 02H                     ; Function to set cursor position
+    MOV     DL, 0                        ; Row (0 for top of the screen)
+    MOV     DH, 0                        ; Column (0 for leftmost)
+    INT     10H                          ; Set cursor position
+
+    RET
+CLEAR_PROMPT ENDP
+
+;==========================================================================================================
+; Procedure to get user input (single character)
+GET_INPUT PROC NEAR
+    MOV     AH, 01H                      ; function 01H: Read single character from stdin
+    INT     21H                          ; store input in AL
+    RET
+GET_INPUT ENDP
+
+;==========================================================================================================
+; Procedure to get a string from user input (up to 20 characters)
+GET_STRING PROC NEAR
+    MOV     CX, 20                       ; max length
+    MOV     DI, BX                       ; DI points to the destination (string)
+    MOV     SI, 0                         ; initialize a counter for the string length
+
+GET_STRING_LOOP:
+    CALL    GET_INPUT                    ; Get a single character
+    CMP     AL, 08H                      ; Check if Backspace key is pressed
+    JE      HANDLE_BACKSPACE            ; If yes, handle backspace
+
+    CMP     AL, 0DH                      ; Check if Enter key (carriage return) is pressed
+    JE      END_GET_STRING               ; If yes, end the input loop
+
+    STOSB                                 ; Store character in DB_TEMP or password storage
+    INC     SI                           ; increment the string length counter
+    LOOP    GET_STRING_LOOP              ; Loop until the max length is reached
+
+HANDLE_BACKSPACE:
+    CMP     SI, 0                         ; Check if the string is empty
+    JE      GET_STRING_LOOP              ; If yes, do nothing
+
+    DEC     SI                           ; decrement the string length counter
+    MOV     AL, 20H                      ; ASCII code for space
+    STOSB                                 ; overwrite the previous character with a space
+    MOV     AL, 08H                      ; ASCII code for backspace
+    CALL    PRINT_CHAR                   ; print the backspace character
+    JMP     GET_STRING_LOOP              ; loop back to get the next character
+
+END_GET_STRING:
+    MOV     BYTE PTR [DI], 0             ; Null terminate the string
+    RET
+GET_STRING ENDP
+
+;==========================================================================================================
 ; Procedure to print string (assumes DX holds address of string)
 PRINT PROC NEAR
     MOV     AH, 09H                ; Function 09H: Print string to stdout
@@ -222,6 +486,13 @@ PRINT PROC NEAR
     RET
 PRINT ENDP
 
+;==========================================================================================================
+; Procedure to print a character stored in AL
+PRINT_CHAR PROC NEAR
+    MOV     AH, 02H              ; Function 02H: Display character
+    INT     21H                  ; Call DOS interrupt
+    RET
+PRINT_CHAR ENDP
 ;==========================================================================================================
 ; Clear screen
 CLS PROC NEAR

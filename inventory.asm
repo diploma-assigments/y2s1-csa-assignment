@@ -1,15 +1,6 @@
 .MODEL SMALL                 ; declare small memory model
 .STACK 64                    ; declare stack segment
 .DATA
-        WHOLE_NUM DW 12345
-        UNIT_PRICE DB "000000", '$' 
-
-        TEN_THOUSAND DW 10000
-        THOUSAND    DW 1000
-        HUNDRED     DW 100                  ; Constant for division
-        TEN         DW 10                   ; Constant for division
-
-
     DB_TEMP                 DB      20 DUP(0) ; Temporary data for username/password (20 bytes max)
     DB_TEMP_PASSWORD        DB      20 DUP(0) ; Separate storage for password
     DW_TEMP				    DW      ?
@@ -155,45 +146,22 @@ GET_INPUT ENDP
 
 ;==========================================================================================================
 ; Procedure to get a string from user input (up to 20 characters)
-;==========================================================================================================
-; Procedure to get a string from user input (up to 20 characters)
 GET_STRING PROC NEAR
     MOV     CX, 20                       ; max length
     MOV     DI, BX                       ; DI points to the destination (string)
-    MOV     SI, 0                         ; initialize a counter for the string length
-
+    
 GET_STRING_LOOP:
     CALL    GET_INPUT                    ; Get a single character
-    CMP     AL, 08H                      ; Check if Backspace key is pressed
-    JE      HANDLE_BACKSPACE            ; If yes, handle backspace
-
     CMP     AL, 0DH                      ; Check if Enter key (carriage return) is pressed
     JE      END_GET_STRING               ; If yes, end the input loop
 
     STOSB                                 ; Store character in DB_TEMP or password storage
-    INC     SI                           ; increment the string length counter
     LOOP    GET_STRING_LOOP              ; Loop until the max length is reached
-
-HANDLE_BACKSPACE:
-    CMP     SI, 0                         ; Check if the string is empty
-    JE      GET_STRING_LOOP              ; If yes, do nothing
-
-    DEC     SI                           ; decrement the string length counter
-    MOV     AL, 20H                      ; ASCII code for space
-    STOSB                                 ; overwrite the previous character with a space
-    MOV     AL, 08H                      ; ASCII code for backspace
-    CALL    PRINT_CHAR                   ; print the backspace character
-    JMP     GET_STRING_LOOP              ; loop back to get the next character
 
 END_GET_STRING:
     MOV     BYTE PTR [DI], 0             ; Null terminate the string
     RET
-
-PRINT_CHAR PROC NEAR
-    MOV     AH, 02H                      ; function 02H - Print character to stdout
-    INT     21H
-    RET
-PRINT_CHAR ENDP
+GET_STRING ENDP
 
 ;==========================================================================================================
 ; Procedure to print string (assumes DX holds address of string)
