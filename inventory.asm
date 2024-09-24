@@ -146,22 +146,45 @@ GET_INPUT ENDP
 
 ;==========================================================================================================
 ; Procedure to get a string from user input (up to 20 characters)
+;==========================================================================================================
+; Procedure to get a string from user input (up to 20 characters)
 GET_STRING PROC NEAR
     MOV     CX, 20                       ; max length
     MOV     DI, BX                       ; DI points to the destination (string)
-    
+    MOV     SI, 0                         ; initialize a counter for the string length
+
 GET_STRING_LOOP:
     CALL    GET_INPUT                    ; Get a single character
+    CMP     AL, 08H                      ; Check if Backspace key is pressed
+    JE      HANDLE_BACKSPACE            ; If yes, handle backspace
+
     CMP     AL, 0DH                      ; Check if Enter key (carriage return) is pressed
     JE      END_GET_STRING               ; If yes, end the input loop
 
     STOSB                                 ; Store character in DB_TEMP or password storage
+    INC     SI                           ; increment the string length counter
     LOOP    GET_STRING_LOOP              ; Loop until the max length is reached
+
+HANDLE_BACKSPACE:
+    CMP     SI, 0                         ; Check if the string is empty
+    JE      GET_STRING_LOOP              ; If yes, do nothing
+
+    DEC     SI                           ; decrement the string length counter
+    MOV     AL, 20H                      ; ASCII code for space
+    STOSB                                 ; overwrite the previous character with a space
+    MOV     AL, 08H                      ; ASCII code for backspace
+    CALL    PRINT_CHAR                   ; print the backspace character
+    JMP     GET_STRING_LOOP              ; loop back to get the next character
 
 END_GET_STRING:
     MOV     BYTE PTR [DI], 0             ; Null terminate the string
     RET
-GET_STRING ENDP
+
+PRINT_CHAR PROC NEAR
+    MOV     AH, 02H                      ; function 02H - Print character to stdout
+    INT     21H
+    RET
+PRINT_CHAR ENDP
 
 ;==========================================================================================================
 ; Procedure to print string (assumes DX holds address of string)
