@@ -3,7 +3,7 @@
 
 .data
     try         DW 12345              ; Original value
-    fracString  DB "000000$", '$'       ; Buffer for result string
+    fracString  DB "000000", '$'       ; Buffer for result string
     TenThousand DW 10000
     Thousand    DW 1000
     Hundred     DW 100                  ; Constant for division
@@ -15,6 +15,18 @@ main proc far                           ; Declare main as a far procedure
     mov ax , @data  
     mov ds , ax
     
+    call DOUBLE_VALUE
+
+    lea dx, fracString                  ; Load address of output buffer
+    call PRINT                          ; Call the PRINT procedure
+
+Exit:
+    mov ax, 4C00h                       ; Terminate program
+    int 21h
+
+main endp                               ; End of far procedure
+
+DOUBLE_VALUE PROC
     mov si, 0                           ; Use SI as an index for fracString
     mov ax, try                         ; Load 'try' into AX
     xor dx, dx                          ; Clear DX for division
@@ -65,16 +77,8 @@ H:
     inc si
     mov fracString[si], al              ; Store second decimal place
     add fracString[si], 30h             ; Convert to ASCII
-
-    ; Display the result
-    lea dx, fracString                  ; Load address of output buffer
-    call PRINT                          ; Call the PRINT procedure
-
-Exit:
-    mov ax, 4C00h                       ; Terminate program
-    int 21h
-
-main endp                               ; End of far procedure
+    RET
+DOUBLE_VALUE ENDP
 
 ; PRINT Procedure to display a string
 PRINT PROC
