@@ -3,10 +3,17 @@ TITLE INVENTORY SYSTEM
 .MODEL SMALL                 ; declare small memory model
 .STACK 64                    ; declare stack segment
 .DATA
-    DB_TEMP                 DB      20 DUP(0) ; Temporary data for username (20 bytes max)
-    DB_TEMP_PASSWORD        DB      20 DUP(0) ; Temporary data for password (20 bytes max)
-    SELECTED_OPTION         DB      ?         ; Store selected option
+
+    DB_TEMP				DB      ?         ; Temporary data (could be for username/password)
+    DW_TEMP				DW      ?
+
+	x EQU 4 ; No. of Attributes in Item
+	y EQU 20 ; No. Of Items
+	
+	ITEM_ARRAY DB x * y DUP(?) ; Allocate space for the 2D array
+
     CRLF                    EQU     0DH, 0AH 
+	LongLine				DB  	"---------------------------------------------", CRLF, "$"
     MAINMENU_OPTIONS        DB      "1 - Staff Log In", CRLF, "2 - Staff Sign Up", CRLF, "0 - Exit", CRLF, "$"
     PROMPT_MSG              DB      CRLF, "Select an option: $"
     INVALID_OPTION_MSG      DB      CRLF, "Invalid option. Try again.", CRLF, "$"
@@ -24,7 +31,18 @@ MAIN PROC FAR
     MOV     DS, AX
     
     ; Main loop starts here
-MAIN_LOOP:
+
+    CALL    MAIN_MENU
+
+EXIT_PROGRAM:
+    MOV     AX, 4C00H                    ; request for program exit
+    INT     21H
+
+MAIN ENDP
+;==========================================================================================================
+; Login/ SignUp Menu
+MAIN_MENU PROC NEAR
+ MAIN_LOOP:
     CALL    CLS
 
     LEA     DX, MAINMENU_OPTIONS        ; print main menu options
@@ -82,12 +100,7 @@ STAFF_SIGNUP:
     CALL    PRINT                        ; Print the username
 
     JMP     MAIN_LOOP
-
-EXIT_PROGRAM:
-    MOV     AX, 4C00H                    ; request for program exit
-    INT     21H
-
-MAIN ENDP
+MAIN_MENU ENDP
 
 ;==========================================================================================================
 ; Procedure to get user input (single character)
@@ -142,4 +155,61 @@ CLS PROC NEAR
 CLS ENDP
 
 ;==========================================================================================================
+; Print a numerical Value with decimel points
+DOUBLE_VALUE PROC NEAR
+    MOV SI, 0
+    MOV AX, WHOLE_NUM
+    XOR DX, DX
+
+    CMP AX, TEN_THOUSAND
+    JGE  TT
+    CMP AX, THOUSAND
+    JGE  T
+    CMP AX, HUNDRED
+    JL  END_DOUBLE_VALUE
+    JMP H
+
+TT: 
+    DIV TEN_THOUSAND
+    MOV UNIT_PRICE[SI], AL
+    ADD UNIT_PRICE[SI], 30h
+    INC SI
+    MOV AX, DX
+    XOR DX, DX
+    JMP T
+
+T:  
+    DIV THOUSAND
+    MOV UNIT_PRICE[SI], AL
+    ADD UNIT_PRICE[SI], 30h
+    INC SI
+    MOV AX, DX
+    XOR DX, DX
+    JMP H
+
+H:  
+    DIV HUNDRED
+    MOV UNIT_PRICE[SI], AL
+    ADD UNIT_PRICE[SI], 30h
+    INC SI
+    MOV AX, DX
+
+    XOR DX, DX
+    MOV UNIT_PRICE[SI], ','
+    DIV TEN
+    INC SI
+    MOV UNIT_PRICE[SI], AL
+    ADD UNIT_PRICE[SI], 30h
+    MOV AX, DX
+
+    XOR DX, DX
+    INC SI
+    MOV UNIT_PRICE[SI], AL
+    ADD UNIT_PRICE[SI], 30h
+
+END_DOUBLE_VALUE:
+    RET
+DOUBLE_VALUE ENDP
+;==========================================================================================================
+
 END MAIN
