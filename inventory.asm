@@ -8,8 +8,9 @@
     MAINMENU_OPTIONS        DB      "1 - Staff Log In", CRLF, "2 - Staff Sign Up", CRLF, "0 - Exit", CRLF, "$"
     PROMPT_MSG              DB      CRLF, "Select an option: $"
     INVALID_OPTION_MSG      DB      CRLF, "Invalid option. Try again.", CRLF, "$"
-    LOGIN_MSG               DB      CRLF, "Staff Log In is selected.", CRLF, "$"
-    SIGNUP_MSG              DB      CRLF, "Staff Sign Up is selected.", CRLF, "$"
+    LOGIN_MSG               DB      CRLF, "Staff Log In:", CRLF, "$"
+    SIGNUP_MSG              DB      CRLF, "Staff Sign Up:", CRLF, "$"
+    PROGRAM_EXIT_MSG        DB      CRLF, "Thank you for using the inventory system.$"
     USERNAME_PROMPT         DB      CRLF, "Enter username: $"
     PASSWORD_PROMPT         DB      CRLF, "Enter password: $"
     SIGNUP_SUCCESS          DB      CRLF, "Signup successful! Welcome, ", "$"
@@ -50,6 +51,8 @@ MAIN_LOOP:
     
 ; Display staff login message
 STAFF_LOGIN:
+    CALL    CLS
+
     LEA     DX, LOGIN_MSG
     CALL    PRINT
 
@@ -76,6 +79,8 @@ STAFF_LOGIN:
     JMP     MAIN_LOOP                    ; Go back to main loop
 
 STAFF_SIGNUP:
+    CALL    CLS
+
     ; Display staff signup message
     LEA     DX, SIGNUP_MSG
     CALL    PRINT
@@ -103,6 +108,12 @@ STAFF_SIGNUP:
     JMP     MAIN_LOOP
 
 EXIT_PROGRAM:
+    CALL    CLS
+
+    ; Print program exit message
+    LEA     DX, PROGRAM_EXIT_MSG
+    CALL    PRINT
+
     MOV     AX, 4C00H                    ; request for program exit
     INT     21H
 
