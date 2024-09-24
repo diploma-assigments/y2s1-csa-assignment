@@ -3,8 +3,30 @@ TITLE INVENTORY SYSTEM
 .MODEL SMALL                 ; declare small memory model
 .STACK 64                    ; declare stack segment
 .DATA
+<<<<<<< Updated upstream
     DB_TEMP                 DB      ?         ; Temporary data (could be for username/password)
     DW_TEMP                 DW      ?
+=======
+	DB_TEMP				DB		?
+	DW_TEMP				DW		?
+
+	x EQU 4 ; No. of Attributes in Item
+	y EQU 20 ; No. Of Items
+
+	ITEM_ARRAY DB x * y DUP(?) ; Allocate space for the 2D array
+
+	CRLF				EQU		0DH, 0AH ; newLine
+
+	LongLine			DB  "-------------------------------", CRLF, "$"
+	MAINMENU_OPTIONS	DB	"1 - Staff Log In", CRLF, "2 - Staff Sign Up", CRLF, "0 - Exit", CRLF, "$"
+	ITEMMENU_OPTIONS	DB  "1 - Add Item", CRLF, "2 - Modify item", CRLF, "3 - Delete item", CRLF, "0 - Exit", CRLF, "$"
+	ITEMMODIFYMENU		DB  "1 - Modify Name", CRLF,"2 - Modify Quantity", CRLF,"3 - Modify UnitPrice", CRLF, "0 - Exit", CRLF, "$"
+	STOCK_REPORT_HEADER	DB  LongLine,"ITEM ID | Name        |Count | UnitPrice |", CRLF,"$"
+	STOCK_EACH
+	
+	
+	
+>>>>>>> Stashed changes
 
     CRLF                    EQU     0DH, 0AH 
     MAINMENU_OPTIONS        DB      "1 - Staff Log In", CRLF, "2 - Staff Sign Up", CRLF, "0 - Exit", CRLF, "$"
