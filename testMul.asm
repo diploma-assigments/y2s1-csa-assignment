@@ -2,46 +2,85 @@
 .stack 100h
 
 .data
-    try DB 127                 ; Original value as a byte
-    intPart DB 0               ; To store the integer part (as byte)
-    fracPart DB 0              ; To store the fractional part (not used here)
-    fracString DB 5 DUP(0), 0  ; Buffer for output string, initialized with 0
-
-    Hundred DB 100             ; Constant for division
-    Ten DB 10                  ; Constant for division
+    try         DW 12345              ; Original value
+    fracString  DB "000000$", '$'       ; Buffer for result string
+    TenThousand DW 10000
+    Thousand    DW 1000
+    Hundred     DW 100                  ; Constant for division
+    Ten         DW 10                   ; Constant for division
 
 .code
-main proc far
+main proc far                           ; Declare main as a far procedure
 
     mov ax , @data  
     mov ds , ax
     
+    mov si, 0                           ; Use SI as an index for fracString
+    mov ax, try                         ; Load 'try' into AX
+    xor dx, dx                          ; Clear DX for division
+
+    cmp ax, TenThousand                 ; Compare 'try' with TenThousand
+    jge  TT                              ; If equal, jump to TT
+    cmp ax, Thousand                    ; Compare 'try' with Thousand
+    jge  T                               ; If equal to Thousand, jump to T
+    cmp ax, Hundred                     ; Compare 'try' with Hundred
+    jl  Exit                            ; If smaller than Hundred, jump to Exit
+    jmp H                               ; If greater or equal to Hundred, jump to H
+
+TT: 
+
+    div TenThousand                     ; Divide by 10000
+    mov fracString[si], al             ; Store quotient in fracString
+    add fracString[si], 30h             ; Convert to ASCII
+    inc si                              ; Increment index
+    mov ax, dx                          ; Move remainder into AX
+    xor dx, dx                          ; Clear DX
+    jmp T                               ; Proceed to Thousand
+
+T:  
+    div Thousand                        ; Divide by 1000
+    mov fracString[si], al             ; Store quotient
+    add fracString[si], 30h             ; Convert to ASCII
+    inc si                              ; Increment index
+    mov ax, dx                          ; Move remainder into AX
+    xor dx, dx                          ; Clear DX
+    jmp H
+
+H:  
+    div Hundred                         ; Divide by 100
+    mov fracString[si], al             ; Store quotient
+    add fracString[si], 30h             ; Convert to ASCII
+    inc si
+    mov ax, dx                          ; Move remainder into AX
+
+    xor dx, dx                          ; Clear DX
+    mov fracString[si], ','             ; Insert comma
+    div Ten                             ; Divide by 10
+    inc si
+    mov fracString[si], al              ; Store first decimal place
+    add fracString[si], 30h             ; Convert to ASCII
+    mov ax,dx
     
-    xor dx, dx                 ; Clear DX for division
-    mov al, try                ; Load the value from 'try' into AL
-    div Hundred                 ; Divide AL by 100
-    mov fracString[2], al      ; Store the result in fracString[2]
-    mov al, ah
-    mov ah, 0                 ; Clear AH to get the integer part
-    div Ten
-    mov fracString[3], ','     ; Add a comma
-    mov fracString[4], ah      ; Store the remaining part (should be 0)
-    mov fracString[5], al     ; Add a zero for the fractional part
+    xor dx, dx
+    inc si
+    mov fracString[si], al              ; Store second decimal place
+    add fracString[si], 30h             ; Convert to ASCII
 
     ; Display the result
-    lea dx, fracString         ; Load address of output buffer
-    call PRINT                 ; Call the PRINT procedure
+    lea dx, fracString                  ; Load address of output buffer
+    call PRINT                          ; Call the PRINT procedure
 
-    mov ax, 4C00h              ; Terminate program
+Exit:
+    mov ax, 4C00h                       ; Terminate program
     int 21h
 
-    main    endp
+main endp                               ; End of far procedure
 
 ; PRINT Procedure to display a string
-PRINT PROC NEAR
-    MOV AH, 09H                ; DOS function to display a string
-    INT 21H                    ; Call DOS interrupt
-    RET                         ; Return from procedure
+PRINT PROC
+    MOV AH, 09H                         ; DOS function to display a string
+    INT 21H                             ; Call DOS interrupt
+    RET                                 ; Return from procedure
 PRINT ENDP
 
-end main
+end main                                ; Mark the end of the program

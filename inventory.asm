@@ -9,9 +9,11 @@ TITLE INVENTORY SYSTEM
 
 	x EQU 4 ; No. of Attributes in Item
 	y EQU 20 ; No. Of Items
+	
+	ITEM_ARRAY DB x * y DUP(?) ; Allocate space for the 2D array
 
     CRLF                    EQU     0DH, 0AH 
-	LongLine				DB  	"-------------------------------", CRLF, "$"
+	LongLine				DB  	"---------------------------------------------", CRLF, "$"
     MAINMENU_OPTIONS        DB      "1 - Staff Log In", CRLF, "2 - Staff Sign Up", CRLF, "0 - Exit", CRLF, "$"
     PROMPT_MSG              DB      CRLF, "Select an option: $"
     INVALID_OPTION_MSG      DB      CRLF, "Invalid option. Try again.", CRLF, "$"
@@ -23,9 +25,9 @@ TITLE INVENTORY SYSTEM
 
 	ITEMMENU_OPTIONS		DB  	"1 - Add Item", CRLF, "2 - Modify item", CRLF, "3 - Delete item", CRLF, "0 - Exit", CRLF, "$"
 	ITEMMODIFYMENU			DB  	"1 - Modify Name", CRLF,"2 - Modify Quantity", CRLF,"3 - Modify UnitPrice", CRLF, "0 - Exit", CRLF, "$"
-	STOCK_REPORT_HEADER     DB      "--------------------------------", CRLF
+	STOCK_REPORT_HEADER     DB      "---------------------------------------------", CRLF
                         	DB      "| ITEM ID | Name        | Count | UnitPrice |", CRLF, "$"
-	STOCK_EACH				DB		"|        |             |      |           |", CRLF,"$"					;8, 13, 6, 11
+	STOCK_EACH				DB		"|         |             |       |           |", CRLF,"$"					;9, 13, 6, 11
     
 ;==========================================================================================================
 .CODE
