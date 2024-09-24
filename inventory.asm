@@ -1,6 +1,15 @@
 .MODEL SMALL                 ; declare small memory model
 .STACK 64                    ; declare stack segment
 .DATA
+        WHOLE_NUM DW 12345
+        UNIT_PRICE DB "000000", '$' 
+
+        TEN_THOUSAND DW 10000
+        THOUSAND    DW 1000
+        HUNDRED     DW 100                  ; Constant for division
+        TEN         DW 10                   ; Constant for division
+
+
     DB_TEMP                 DB      20 DUP(0) ; Temporary data for username/password (20 bytes max)
     DB_TEMP_PASSWORD        DB      20 DUP(0) ; Separate storage for password
     DW_TEMP				    DW      ?
