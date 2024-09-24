@@ -3,22 +3,21 @@
 .DATA
     DB_TEMP                 DB      20 DUP(0) ; Temporary data for username/password (20 bytes max)
     DB_TEMP_PASSWORD        DB      20 DUP(0) ; Separate storage for password
+    DW_TEMP				    DW      ?
     SELECTED_OPTION         DB      ?         ; Store selected option
     CRLF                    EQU     0DH, 0AH 
+
     MAINMENU_OPTIONS        DB      "1 - Staff Log In", CRLF, "2 - Staff Sign Up", CRLF, "0 - Exit", CRLF, "$"
     PROMPT_MSG              DB      CRLF, "Select an option: $"
     INVALID_OPTION_MSG      DB      CRLF, "Invalid option. Try again.", CRLF, "$"
     LOGIN_MSG               DB      CRLF, "Staff Log In:", CRLF, "$"
     SIGNUP_MSG              DB      CRLF, "Staff Sign Up:", CRLF, "$"
     PROGRAM_EXIT_MSG        DB      CRLF, "Thank you for using the inventory system.$"
+    SIGNUP_SUCCESS          DB      CRLF, "Signup successful! Welcome, ", "$"
     USERNAME_PROMPT         DB      CRLF, "Enter username: $"
     PASSWORD_PROMPT         DB      CRLF, "Enter password: $"
-    SIGNUP_SUCCESS          DB      CRLF, "Signup successful! Welcome, ", "$"
-
-    DB_TEMP				    DB      ?         ; Temporary data (could be for username/password)
-    DW_TEMP				    DW      ?
+    
     LongLine				DB  	"---------------------------------------------", CRLF, "$"
-
     ITEMMENU_OPTIONS		DB  	"1 - Add Item", CRLF, "2 - Modify item", CRLF, "3 - Delete item", CRLF, "0 - Exit", CRLF, "$"
 	ITEMMODIFYMENU			DB  	"1 - Modify Name", CRLF,"2 - Modify Quantity", CRLF,"3 - Modify UnitPrice", CRLF, "0 - Exit", CRLF, "$"
 	STOCK_REPORT_HEADER     DB      "---------------------------------------------", CRLF
@@ -29,7 +28,9 @@
 	y EQU 20 ; No. Of Items
 	
 	ITEM_ARRAY DB x * y DUP(?) ; Allocate space for the 2D array
-
+    ; file operations
+    STAFF_FILE              DB      "staff.txt", 0
+    FILE_HANDLE             DW      ?
     
 ;==========================================================================================================
 .CODE
@@ -211,63 +212,13 @@ CLS PROC NEAR
 CLS ENDP
 
 ;==========================================================================================================
-; Print a numerical Value with decimel points
-DOUBLE_VALUE PROC NEAR
-    MOV SI, 0
-    MOV AX, WHOLE_NUM
-    XOR DX, DX
-
-    CMP AX, TEN_THOUSAND
-    JGE  TT
-    CMP AX, THOUSAND
-    JGE  T
-    CMP AX, HUNDRED
-    JGE H
-    JMP Ten
-TT: 
-    DIV TEN_THOUSAND
-    MOV UNIT_PRICE[SI], AL
-    ADD UNIT_PRICE[SI], 30h
-    INC SI
-    MOV AX, DX
-    XOR DX, DX
-    JMP T
-
-T:  
-    DIV THOUSAND
-    MOV UNIT_PRICE[SI], AL
-    ADD UNIT_PRICE[SI], 30h
-    INC SI
-    MOV AX, DX
-    XOR DX, DX
-    JMP H
-
-H:  
-    DIV HUNDRED
-    MOV UNIT_PRICE[SI], AL
-    ADD UNIT_PRICE[SI], 30h
-    INC SI
-    MOV AX, DX
-
-Ten:
-    XOR DX, DX
-    MOV UNIT_PRICE[SI], ','
-    DIV TEN
-    INC SI
-    MOV UNIT_PRICE[SI], AL
-    ADD UNIT_PRICE[SI], 30h
-    MOV AX, DX
-
-    XOR DX, DX
-    INC SI
-    MOV UNIT_PRICE[SI], AL
-    ADD UNIT_PRICE[SI], 30h
-
-    CMP UNIT_PRICE[] , ','
-
-END_DOUBLE_VALUE:
-    RET
-DOUBLE_VALUE ENDP
-;==========================================================================================================
-
+; Write to file (Function 40h)
+WRITE_TO_FILE PROC NEAR
+    mov ah, 40h            ; Write to file
+    mov bx, filehandle     ; File handle
+    lea dx, buffer         ; DS:DX -> Buffer
+    mov cx, buffersize     ; Number of bytes to write
+    int 21h                ; DOS interrupt
+    jc error               ; Jump if carry flag is set (error)
+WRITE_TO_FILE ENDP
 END MAIN
