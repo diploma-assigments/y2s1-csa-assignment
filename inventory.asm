@@ -1,19 +1,10 @@
-TITLE INVENTORY SYSTEM
-
 .MODEL SMALL                 ; declare small memory model
 .STACK 64                    ; declare stack segment
 .DATA
-
-    DB_TEMP				DB      ?         ; Temporary data (could be for username/password)
-    DW_TEMP				DW      ?
-
-	x EQU 4 ; No. of Attributes in Item
-	y EQU 20 ; No. Of Items
-	
-	ITEM_ARRAY DB x * y DUP(?) ; Allocate space for the 2D array
-
+    DB_TEMP                 DB      20 DUP(0) ; Temporary data for username/password (20 bytes max)
+    DB_TEMP_PASSWORD        DB      20 DUP(0) ; Separate storage for password
+    SELECTED_OPTION         DB      ?         ; Store selected option
     CRLF                    EQU     0DH, 0AH 
-	LongLine				DB  	"---------------------------------------------", CRLF, "$"
     MAINMENU_OPTIONS        DB      "1 - Staff Log In", CRLF, "2 - Staff Sign Up", CRLF, "0 - Exit", CRLF, "$"
     PROMPT_MSG              DB      CRLF, "Select an option: $"
     INVALID_OPTION_MSG      DB      CRLF, "Invalid option. Try again.", CRLF, "$"
@@ -31,18 +22,7 @@ MAIN PROC FAR
     MOV     DS, AX
     
     ; Main loop starts here
-
-    CALL    MAIN_MENU
-
-EXIT_PROGRAM:
-    MOV     AX, 4C00H                    ; request for program exit
-    INT     21H
-
-MAIN ENDP
-;==========================================================================================================
-; Login/ SignUp Menu
-MAIN_MENU PROC NEAR
- MAIN_LOOP:
+MAIN_LOOP:
     CALL    CLS
 
     LEA     DX, MAINMENU_OPTIONS        ; print main menu options
@@ -68,11 +48,32 @@ MAIN_MENU PROC NEAR
     CALL    PRINT
     JMP     MAIN_LOOP                    ; repeat the loop for another input
     
+; Display staff login message
 STAFF_LOGIN:
-    ; Display staff login message
     LEA     DX, LOGIN_MSG
     CALL    PRINT
-    JMP     MAIN_LOOP
+
+    ; Get username
+    LEA     DX, USERNAME_PROMPT
+    CALL    PRINT
+    MOV     BX, OFFSET DB_TEMP          ; Address of the username storage
+    CALL    GET_STRING                   ; Read username
+
+    ; Get password
+    LEA     DX, PASSWORD_PROMPT
+    CALL    PRINT
+    MOV     BX, OFFSET DB_TEMP_PASSWORD  ; Address of the password storage
+    CALL    GET_STRING                   ; Read password
+
+    ; Confirm login attempt
+    LEA     DX, SIGNUP_SUCCESS           ; Use the success message to confirm login attempt
+    CALL    PRINT
+    
+    ; Optionally, print the username to confirm
+    LEA     DX, DB_TEMP                  ; Load address of username
+    CALL    PRINT                         ; Print the username
+
+    JMP     MAIN_LOOP                    ; Go back to main loop
 
 STAFF_SIGNUP:
     ; Display staff signup message
@@ -100,7 +101,12 @@ STAFF_SIGNUP:
     CALL    PRINT                        ; Print the username
 
     JMP     MAIN_LOOP
-MAIN_MENU ENDP
+
+EXIT_PROGRAM:
+    MOV     AX, 4C00H                    ; request for program exit
+    INT     21H
+
+MAIN ENDP
 
 ;==========================================================================================================
 ; Procedure to get user input (single character)
@@ -155,61 +161,4 @@ CLS PROC NEAR
 CLS ENDP
 
 ;==========================================================================================================
-; Print a numerical Value with decimel points
-DOUBLE_VALUE PROC NEAR
-    MOV SI, 0
-    MOV AX, WHOLE_NUM
-    XOR DX, DX
-
-    CMP AX, TEN_THOUSAND
-    JGE  TT
-    CMP AX, THOUSAND
-    JGE  T
-    CMP AX, HUNDRED
-    JL  END_DOUBLE_VALUE
-    JMP H
-
-TT: 
-    DIV TEN_THOUSAND
-    MOV UNIT_PRICE[SI], AL
-    ADD UNIT_PRICE[SI], 30h
-    INC SI
-    MOV AX, DX
-    XOR DX, DX
-    JMP T
-
-T:  
-    DIV THOUSAND
-    MOV UNIT_PRICE[SI], AL
-    ADD UNIT_PRICE[SI], 30h
-    INC SI
-    MOV AX, DX
-    XOR DX, DX
-    JMP H
-
-H:  
-    DIV HUNDRED
-    MOV UNIT_PRICE[SI], AL
-    ADD UNIT_PRICE[SI], 30h
-    INC SI
-    MOV AX, DX
-
-    XOR DX, DX
-    MOV UNIT_PRICE[SI], ','
-    DIV TEN
-    INC SI
-    MOV UNIT_PRICE[SI], AL
-    ADD UNIT_PRICE[SI], 30h
-    MOV AX, DX
-
-    XOR DX, DX
-    INC SI
-    MOV UNIT_PRICE[SI], AL
-    ADD UNIT_PRICE[SI], 30h
-
-END_DOUBLE_VALUE:
-    RET
-DOUBLE_VALUE ENDP
-;==========================================================================================================
-
 END MAIN
