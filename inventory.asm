@@ -14,6 +14,22 @@
     USERNAME_PROMPT         DB      CRLF, "Enter username: $"
     PASSWORD_PROMPT         DB      CRLF, "Enter password: $"
     SIGNUP_SUCCESS          DB      CRLF, "Signup successful! Welcome, ", "$"
+
+    DB_TEMP				    DB      ?         ; Temporary data (could be for username/password)
+    DW_TEMP				    DW      ?
+    LongLine				DB  	"---------------------------------------------", CRLF, "$"
+
+    ITEMMENU_OPTIONS		DB  	"1 - Add Item", CRLF, "2 - Modify item", CRLF, "3 - Delete item", CRLF, "0 - Exit", CRLF, "$"
+	ITEMMODIFYMENU			DB  	"1 - Modify Name", CRLF,"2 - Modify Quantity", CRLF,"3 - Modify UnitPrice", CRLF, "0 - Exit", CRLF, "$"
+	STOCK_REPORT_HEADER     DB      "---------------------------------------------", CRLF
+                        	DB      "| ITEM ID | Name        | Count | UnitPrice |", CRLF, "$"
+	STOCK_EACH				DB		"|         |             |       |           |", CRLF,"$"					;9, 13, 6, 11
+
+	x EQU 4 ; No. of Attributes in Item
+	y EQU 20 ; No. Of Items
+	
+	ITEM_ARRAY DB x * y DUP(?) ; Allocate space for the 2D array
+
     
 ;==========================================================================================================
 .CODE
@@ -172,4 +188,63 @@ CLS PROC NEAR
 CLS ENDP
 
 ;==========================================================================================================
+; Print a numerical Value with decimel points
+DOUBLE_VALUE PROC NEAR
+    MOV SI, 0
+    MOV AX, WHOLE_NUM
+    XOR DX, DX
+
+    CMP AX, TEN_THOUSAND
+    JGE  TT
+    CMP AX, THOUSAND
+    JGE  T
+    CMP AX, HUNDRED
+    JGE H
+    JMP Ten
+TT: 
+    DIV TEN_THOUSAND
+    MOV UNIT_PRICE[SI], AL
+    ADD UNIT_PRICE[SI], 30h
+    INC SI
+    MOV AX, DX
+    XOR DX, DX
+    JMP T
+
+T:  
+    DIV THOUSAND
+    MOV UNIT_PRICE[SI], AL
+    ADD UNIT_PRICE[SI], 30h
+    INC SI
+    MOV AX, DX
+    XOR DX, DX
+    JMP H
+
+H:  
+    DIV HUNDRED
+    MOV UNIT_PRICE[SI], AL
+    ADD UNIT_PRICE[SI], 30h
+    INC SI
+    MOV AX, DX
+
+Ten:
+    XOR DX, DX
+    MOV UNIT_PRICE[SI], ','
+    DIV TEN
+    INC SI
+    MOV UNIT_PRICE[SI], AL
+    ADD UNIT_PRICE[SI], 30h
+    MOV AX, DX
+
+    XOR DX, DX
+    INC SI
+    MOV UNIT_PRICE[SI], AL
+    ADD UNIT_PRICE[SI], 30h
+
+    CMP UNIT_PRICE[] , ','
+
+END_DOUBLE_VALUE:
+    RET
+DOUBLE_VALUE ENDP
+;==========================================================================================================
+
 END MAIN
