@@ -212,13 +212,23 @@ CLS PROC NEAR
 CLS ENDP
 
 ;==========================================================================================================
-; Write to file (Function 40h)
-WRITE_TO_FILE PROC NEAR
-    mov ah, 40h            ; Write to file
-    mov bx, filehandle     ; File handle
-    lea dx, buffer         ; DS:DX -> Buffer
-    mov cx, buffersize     ; Number of bytes to write
-    int 21h                ; DOS interrupt
-    jc error               ; Jump if carry flag is set (error)
-WRITE_TO_FILE ENDP
+COPY_STRING PROC
+    PUSH SI                     ; Save SI (source index)
+    PUSH DI                     ; Save DI (destination index)
+
+COPY_LOOP:
+    MOV     AL, [SI]             ; Load current character from source string
+    MOV     [DI], AL             ; Copy it to destination string
+    CMP     AL, '$'              ; Check for the string terminator
+    JE      COPY_DONE            ; Stop copying if end of string is reached
+
+    INC     SI                   ; Increment source index
+    INC     DI                   ; Increment destination index
+    JMP     COPY_LOOP            ; Repeat the loop
+
+COPY_DONE:
+    POP DI                       ; Restore DI
+    POP SI                       ; Restore SI
+    RET
+COPY_STRING ENDP
 END MAIN
