@@ -31,7 +31,8 @@ TITLE ITEM MENU
 
     ARRAY db 20,?,8 dup ("$")
 
-    CRLF                    EQU     0DH, 0AH
+ CRLF                    EQU     0DH, 0AH
+ NEWLINE                 DB      0DH, 0AH, "$"
     ZERO                    DB     "0", '$'
 	LONGLINE				DB  	"---------------------------------------------", CRLF, "$"
 
@@ -71,7 +72,7 @@ TITLE ITEM MENU
 
     ITEM_ID_PROMPT          DB      CRLF,"Enter ITEM Name      : $"
 
-    ; STOCK_REPORT
+     ; STOCK_REPORT
 	STOCK_REPORT_HEADER     DB      "-------------------------------------------------------", CRLF
                         	DB      "| ITEM ID | Name        | Count | UnitPrice |  Worth  |", CRLF
                             DB      "-------------------------------------------------------", CRLF, '$'
@@ -272,16 +273,49 @@ DELETE_MENU_START:
     RET
 DELETE_ITEM_MENU ENDP
 
+STOCK_REPORT_MENU PROC NEAR
 ; VIEW_REPORT_MENU
-STOCK_REPORT    PROC    NEAR
-    LEA    DX, STOCK_REPORT_HEADER
-    CALL    PRINT
+; Display the report header
+    LEA     DX, STOCK_REPORT_HEADER
+    MOV     AH, 09H
+    INT     21H                ; Print the report header
 
-    LEA    DX, STOCK_REPORT_FOOTER
-    CALL    PRINT
-    
-    RET
-STOCK_REPORT ENDP
+    ; Print a new line after the header
+    lea     DX, NEWLINE           ; Load the address of CRLF into DX
+    MOV     AH, 09H
+    INT     21H                ; Print a new line
+
+    MOV     CX, y              ; Set the loop to run for all items (20 items in this case)
+    MOV     SI, 0              ; Set SI to 0 to index ITEM_ARRAY
+
+    XOR     AX, AX             ; Clear AX (for summing total stock worth)
+    XOR     BX, BX             ; Clear BX (for the current item worth calculation)
+
+    ; Here you can implement the logic to display the stock items
+    ; For example, loop through ITEM_ARRAY and print each item
+    ; ...
+
+STOCK_REPORT_MENU ENDP
+
+
+TRENDING_REPORT_MENU PROC NEAR
+   ; Display the report header
+    LEA     DX, STOCK_REPORT_HEADER
+    MOV     AH, 09H
+    INT     21H
+
+   ; Print a new line after the header
+     MOV     CX, y          ; Set the loop to run for all items (20 items in this case)
+    MOV     SI, 0          ; Set SI to 0 to index ITEM_ARRAY
+
+    XOR     AX, AX         ; Clear AX (for summing total stock worth)
+    XOR     BX, BX         ; Clear BX (for the current item worth calculation)
+
+    ; Halt for inspection
+    MOV     AH, 4CH
+    INT     21H                 ; Exit to DOS after printing the header to inspect
+
+TRENDING_REPORT_MENU ENDP
 
 ; ITEM - SPECIFIC FUNCTIONS
 ; GENERATE_ID
@@ -654,14 +688,13 @@ CLS ENDP
 
 
     ; Code to finalize report (print total worth, etc.)
-; STOCK_REPORT PROC
-STOCK_REPORT_MENU PROC NEAR
- 
-STOCK_REPORT_MENU ENDP
+;--------------------------------------------------------------
+; STOCK_REPORT_MENU: Displays the stock report menu
+;--------------------------------------------------------------
 
-TRENDING_REPORT_MENU PROC NEAR
-
-TRENDING_REPORT_MENU ENDP
+;--------------------------------------------------------------
+; TRENDING_REPORT_MENU: Displays the trending report menu
+;--------------------------------------------------------------
 
 ;==========================================================================================================
 ; Write to file (Function 40h)
