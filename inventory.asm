@@ -6,6 +6,7 @@
     DW_TEMP				    DW      ?
     SELECTED_OPTION         DB      ?         ; Store selected option
     CRLF                    EQU     0DH, 0AH 
+    NEWLINE                 DB      0DH, 0AH, '$'  ; Newline character (CR + LF)
 
     MAINMENU_OPTIONS        DB      "1 - Staff Log In", CRLF, "2 - Staff Sign Up", CRLF, "0 - Exit", CRLF, "$"
     PROMPT_MSG              DB      CRLF, "Select an option: $"
@@ -16,6 +17,8 @@
     SIGNUP_SUCCESS          DB      CRLF, "Signup successful! Welcome, ", "$"
     USERNAME_PROMPT         DB      CRLF, "Enter username: $"
     PASSWORD_PROMPT         DB      CRLF, "Enter password: $"
+    successMsg              DB      "Data written successfully.$"
+    errorMsg                DB      "Error writing to file.$"
     
     LongLine				DB  	"---------------------------------------------", CRLF, "$"
     ITEMMENU_OPTIONS		DB  	"1 - Add Item", CRLF, "2 - Modify item", CRLF, "3 - Delete item", CRLF, "0 - Exit", CRLF, "$"
@@ -114,6 +117,9 @@ STAFF_SIGNUP:
     MOV     BX, OFFSET DB_TEMP_PASSWORD  ; Address of the password storage
     CALL    GET_STRING                   ; Read password
 
+    ; Write username and password to file
+    CALL    WRITE_TO_FILE                ; Call the write to file procedure
+
     ; Confirm signup success
     LEA     DX, SIGNUP_SUCCESS
     CALL    PRINT
@@ -146,42 +152,17 @@ GET_INPUT ENDP
 
 ;==========================================================================================================
 ; Procedure to get a string from user input (up to 20 characters)
-
 GET_STRING PROC NEAR
     MOV     CX, 20                       ; max length
     MOV     DI, BX                       ; DI points to the destination (string)
-    MOV     BYTE PTR [DI], 0             ; Null terminate the string initially
-    XOR     SI, SI                       ; Initialize SI as length counter
-
+    
 GET_STRING_LOOP:
     CALL    GET_INPUT                    ; Get a single character
     CMP     AL, 0DH                      ; Check if Enter key (carriage return) is pressed
     JE      END_GET_STRING               ; If yes, end the input loop
 
-    CMP     AL, 0BH                      ; Check for backspace (ASCII 0x08)
-    JE      BACKSPACE                    ; If backspace is pressed, handle it
-
-    CMP     SI, 19                       ; Check if string is full (20 characters including null terminator)
-    JAE     GET_STRING_LOOP              ; If full, ignore further input
-
     STOSB                                 ; Store character in DB_TEMP or password storage
-    INC     SI                           ; Increment length counter
-    INC     DI                           ; Move DI to the next position for the next character
-    JMP     GET_STRING_LOOP              ; Continue the loop
-
-BACKSPACE:
-    CMP     SI, 0                        ; Check if at the beginning of the string
-    JBE     GET_STRING_LOOP              ; If so, do nothing (ignore backspace)
-
-    DEC     DI                           ; Move DI back to the last character position
-    DEC     SI                           ; Decrease length counter
-    MOV BYTE PTR [DI], 0                 ; Null terminate after deleting
-
-    ; Overwrite the last character with a space (optional, just for visual)
-    ; This will allow the user to see a blank space where they deleted a character
-    MOV BYTE PTR [DI], ' '               ; Optional: Write a space for visual feedback
-
-    JMP     GET_STRING_LOOP               ; Continue to get input
+    LOOP    GET_STRING_LOOP              ; Loop until the max length is reached
 
 END_GET_STRING:
     MOV     BYTE PTR [DI], 0             ; Null terminate the string
@@ -214,51 +195,63 @@ CLS PROC NEAR
 CLS ENDP
 
 ;==========================================================================================================
-; Procedure to write username and password to staff.txt
-
+; Write to file (Function 40h)
+;==========================================================================================================
 WRITE_TO_FILE PROC NEAR
-    ; Create/Open the file
-    MOV     AH, 3Ch                        ; DOS function to create a file
-    MOV     CX, 0                          ; File attributes (normal)
-    LEA     DX, FILENAME                   ; Load the file name
-    INT     21h                            ; Call DOS
-    JC      FILE_ERROR                      ; Jump if there is an error
-    MOV     FILE_HANDLE, AX                 ; Store the file handle
+    ; Open the file for appending
+    MOV     AH, 3Ch                        ; function 3Ch: create/open file
+    MOV     AL, 2                          ; mode: create
+    LEA     DX, STAFF_FILE                 ; filename
+    INT     21h                            ; call DOS interrupt
+    JC      error                          ; jump if error (carry flag set)
 
-    ; Write username
-    MOV     AH, 40h                        ; DOS function to write to a file
-    MOV     BX, FILE_HANDLE                ; File handle
-    LEA     DX, DB_TEMP                   ; Load the address of the username
-    MOV     CX, 20                         ; Write up to 20 bytes for the username
-    INT     21h                            ; Call DOS
-    JC      FILE_ERROR                      ; Jump if there is an error
+    MOV     FILE_HANDLE, AX                ; save file handle
+    
+    ; Write username to file
+    MOV     AH, 40h                        ; function 40h: write to file
+    MOV     BX, FILE_HANDLE                ; file handle
+    LEA     DX, DB_TEMP                   ; address of the username buffer
+    MOV     CX, 20                         ; number of bytes to write (username)
+    INT     21h                            ; call DOS interrupt
+    JC      error                          ; jump if error (carry flag set)
 
-    ; Optionally write a newline or separator
-    MOV     AH, 40h                        ; DOS function to write to a file
-    MOV     BX, FILE_HANDLE                ; File handle
-    LEA     DX, CRLF                      ; Load the address of CRLF for a newline
-    MOV     CX, 2                          ; Write CRLF (2 bytes)
-    INT     21h                            ; Call DOS
-    JC      FILE_ERROR                      ; Jump if there is an error
+    ; Debug: Check if username is written correctly
+    LEA     DX, DB_TEMP                   ; Load address of username
+    CALL    PRINT                          ; Print the username for confirmation
 
-    ; Write password
-    MOV     AH, 40h                        ; DOS function to write to a file
-    MOV     BX, FILE_HANDLE                ; File handle
-    LEA     DX, DB_TEMP_PASSWORD          ; Load the address of the password
-    MOV     CX, 20                         ; Write up to 20 bytes for the password
-    INT     21h                            ; Call DOS
-    JC      FILE_ERROR                      ; Jump if there is an error
+    ; Write password to file
+    MOV     AH, 40h                        ; function 40h: write to file
+    MOV     BX, FILE_HANDLE                ; file handle
+    LEA     DX, DB_TEMP_PASSWORD           ; address of the password buffer
+    MOV     CX, 20                         ; number of bytes to write (password)
+    INT     21h                            ; call DOS interrupt
+    JC      error                          ; jump if error (carry flag set)
+
+    ; Debug: Check if password is written correctly
+    LEA     DX, DB_TEMP_PASSWORD           ; Load address of password
+    CALL    PRINT                          ; Print the password for confirmation
+
+    ; Write newline to file (optional for readability)
+    MOV     AH, 40h                        ; function 40h: write to file
+    MOV     BX, FILE_HANDLE                ; file handle
+    LEA     DX, NEWLINE                    ; address of newline character
+    MOV     CX, 2                          ; number of bytes for newline (CR LF)
+    INT     21h                            ; call DOS interrupt
+    JC      error                          ; jump if error (carry flag set)
 
     ; Close the file
-    MOV     AH, 3Eh                        ; DOS function to close a file
-    MOV     BX, FILE_HANDLE                ; File handle
-    INT     21h                            ; Call DOS
-    JC      FILE_ERROR                      ; Jump if there is an error
+    MOV     AH, 3Eh                        ; function 3Eh: close file
+    MOV     BX, FILE_HANDLE                ; file handle
+    INT     21h                            ; call DOS interrupt
 
+    ; Indicate success
+    LEA     DX, successMsg                 ; Load success message
+    CALL    PRINT
     RET
 
-FILE_ERROR:
-    ; Handle file error (optional: print error message)
+error:
+    LEA     DX, errorMsg                   ; Load error message
+    CALL    PRINT
     RET
 WRITE_TO_FILE ENDP
 
