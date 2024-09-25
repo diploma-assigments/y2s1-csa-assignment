@@ -198,15 +198,13 @@ STAFF_LOGIN PROC NEAR
     STAFF_LOGIN_CREDENTIALS_VALID:
     LEA     DX, LOGIN_SUCCESS_MSG
     CALL    PRINT
-    MOV AH, 01h
-    INT 21H
+    CALL    GET_CHAR_INPUT
     JMP     MAIN_LOOP                    ; Go back to main loop
 
     STAFF_LOGIN_CREDENTIALS_INVALID:
     LEA     DX, LOGIN_FAILED_MSG
     CALL    PRINT
-    MOV AH, 01h
-    INT 21H
+    CALL    GET_CHAR_INPUT
     JMP     MAIN_LOOP                    ; Go back to main loop
 STAFF_LOGIN ENDP
 
@@ -350,6 +348,16 @@ PRINT PROC NEAR
     INT     21H
     RET
 PRINT ENDP
+
+;==========================================================================================================
+; Procedure to print string (assumes DX holds address of string)
+PRINTLN PROC NEAR
+    MOV     AH, 09H                      ; function 09H: Print string to stdout
+    INT     21H
+    LEA     DX, NEWLINE
+    INT     21H
+    RET
+PRINTLN ENDP
 
 ;==========================================================================================================
 ; Clear screen
