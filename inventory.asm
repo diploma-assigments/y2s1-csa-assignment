@@ -6,27 +6,18 @@
     DW_TEMP				    DW      ?
     SELECTED_OPTION         DB      ?         ; Store selected option
     CRLF                    EQU     0DH, 0AH 
-    NEWLINE                 DB      0DH, 0AH, '$'  ; Newline character (CR + LF)
 
-    MAINMENU_OPTIONS        DB      "1 - Staff Log In", CRLF, "2 - Staff Sign Up", CRLF, "0 - Exit", CRLF, "$"
-    PROMPT_MSG              DB      CRLF, "Select an option: $"
-    INVALID_OPTION_MSG      DB      CRLF, "Invalid option. Try again.", CRLF, "$"
-    LOGIN_MSG               DB      CRLF, "Staff Log In:", CRLF, "$"
-    SIGNUP_MSG              DB      CRLF, "Staff Sign Up:", CRLF, "$"
-    PROGRAM_EXIT_MSG        DB      CRLF, "Thank you for using the inventory system.$"
-    SIGNUP_SUCCESS          DB      CRLF, "Signup successful! Welcome, ", "$"
-    USERNAME_PROMPT         DB      CRLF, "Enter username: $"
-    PASSWORD_PROMPT         DB      CRLF, "Enter password: $"
-    successMsg              DB      "Data written successfully.$"
-    errorMsg                DB      "Error writing to file.$"
-    
-    LongLine				DB  	"---------------------------------------------", CRLF, "$"
-    ITEMMENU_OPTIONS		DB  	"1 - Add Item", CRLF, "2 - Modify item", CRLF, "3 - Delete item", CRLF, "0 - Exit", CRLF, "$"
-	ITEMMODIFYMENU			DB  	"1 - Modify Name", CRLF,"2 - Modify Quantity", CRLF,"3 - Modify UnitPrice", CRLF, "0 - Exit", CRLF, "$"
-	STOCK_REPORT_HEADER     DB      "---------------------------------------------", CRLF
-                        	DB      "| ITEM ID | Name        | Count | UnitPrice |", CRLF, "$"
-	STOCK_EACH				DB		"|         |             |       |           |", CRLF,"$"					;9, 13, 6, 11
-
+    MAINMENU_OPTIONS DB "1 - Staff Log In", CRLF, "2 - Staff Sign Up", CRLF, "0 - Exit", CRLF, "$"
+    PROMPT_MSG DB CRLF, "Select an option: $"
+    INVALID_OPTION_MSG DB CRLF, "Invalid option. Try again.", CRLF, "$"
+    LOGIN_MSG DB CRLF, "Staff Log In:", CRLF, "$"
+    SIGNUP_MSG DB CRLF, "Staff Sign Up:", CRLF, "$"
+    PROGRAM_EXIT_MSG DB CRLF, "Thank you for using the inventory system.$"
+    SIGNUP_SUCCESS DB CRLF, "Signup successful! Welcome, ", "$"
+    USERNAME_PROMPT DB CRLF, "Enter username: $"
+    PASSWORD_PROMPT DB CRLF, "Enter password: $"
+    successMsg DB "Data written successfully.$"
+    errorMsg DB "Error writing to file.$"
 	x EQU 4 ; No. of Attributes in Item
 	y EQU 20 ; No. Of Items
 	
@@ -62,13 +53,13 @@ MAIN_LOOP:
     JE      STAFF_SIGNUP                 ; jump to staff sign up if '2'
 
     CMP     SELECTED_OPTION, '0'        ; check if the user selected '0'
-    JE      EXIT_PROGRAM                 ; exit program if '0'
+    JMP      EXIT_PROGRAM                 ; exit program if '0'
 
     ; Invalid option
     LEA     DX, INVALID_OPTION_MSG       ; display invalid option message
     CALL    PRINT
     JMP     MAIN_LOOP                    ; repeat the loop for another input
-    
+
 ; Display staff login message
 STAFF_LOGIN:
     CALL    CLS
@@ -96,6 +87,10 @@ STAFF_LOGIN:
     LEA     DX, DB_TEMP                  ; Load address of username
     CALL    PRINT                         ; Print the username
 
+    ; Add a confirmation message
+    DB 'Login successful! Welcome back, ', 0
+    CALL    PRINT                         ; Print the confirmation message
+
     JMP     MAIN_LOOP                    ; Go back to main loop
 
 STAFF_SIGNUP:
@@ -117,9 +112,6 @@ STAFF_SIGNUP:
     MOV     BX, OFFSET DB_TEMP_PASSWORD  ; Address of the password storage
     CALL    GET_STRING                   ; Read password
 
-    ; Write username and password to file
-    CALL    WRITE_TO_FILE                ; Call the write to file procedure
-
     ; Confirm signup success
     LEA     DX, SIGNUP_SUCCESS
     CALL    PRINT
@@ -128,9 +120,13 @@ STAFF_SIGNUP:
     LEA     DX, DB_TEMP                  ; Load address of username
     CALL    PRINT                        ; Print the username
 
+    ; Add a confirmation message
+    DB 'Signup successful! Welcome, ', 0
+    CALL    PRINT                         ; Print the confirmation message
+
     JMP     MAIN_LOOP
 
-EXIT_PROGRAM:
+EXIT_PROGRAM PROC NEAR
     CALL    CLS
 
     ; Print program exit message
@@ -139,8 +135,7 @@ EXIT_PROGRAM:
 
     MOV     AX, 4C00H                    ; request for program exit
     INT     21H
-
-MAIN ENDP
+EXIT_PROGRAM ENDP
 
 ;==========================================================================================================
 ; Procedure to get user input (single character)
@@ -153,19 +148,75 @@ GET_INPUT ENDP
 ;==========================================================================================================
 ; Procedure to get a string from user input (up to 20 characters)
 GET_STRING PROC NEAR
-    MOV     CX, 20                       ; max length
+    MOV     CX, 20                       ; max length (20 characters)
     MOV     DI, BX                       ; DI points to the destination (string)
-    
-GET_STRING_LOOP:
-    CALL    GET_INPUT                    ; Get a single character
-    CMP     AL, 0DH                      ; Check if Enter key (carriage return) is pressed
-    JE      END_GET_STRING               ; If yes, end the input loop
+    XOR     SI, SI                       ; Initialize counter for string length
 
-    STOSB                                 ; Store character in DB_TEMP or password storage
-    LOOP    GET_STRING_LOOP              ; Loop until the max length is reached
+GET_STRING_LOOP:
+    CALL    GET_INPUT                     ; Get a single character
+    CMP     AL, 08H                      ; Check if Backspace key is pressed
+    JE      HANDLE_BACKSPACE              ; If yes, handle backspace
+
+    CMP     AL, 0DH                       ; Check if Enter key (carriage return) is pressed
+    JE      END_GET_STRING                ; If yes, end the input loop
+
+    CMP     SI, 19                        ; Check if max length reached (allowing space for null terminator)
+    JAE     GET_STRING_LOOP               ; If max length reached, ignore further input
+
+    STOSB                                  ; Store character in the buffer
+    INC     SI                             ; Increment the string length counter
+    JMP     GET_STRING_LOOP               ; Loop back to get the next character
+
+HANDLE_BACKSPACE:
+    CMP     SI, 0                         ; Check if the string is empty
+    JE      HANDLE_BACKSPACE_END           ; If yes, do nothing
+
+    CMP     SI, 1                         ; Check if we're at the beginning of the string
+    JB      HANDLE_BACKSPACE_END           ; If yes, do nothing
+
+    DEC     SI                             ; Decrement the string length counter
+    DEC     DI                             ; Move DI to the last character's position
+
+    ; Print carriage return and line feed to move cursor to beginning of line
+    MOV     DL, 0DH                      ; Carriage return character
+    MOV     AH, 02H                      ; Function 02H: Print character to stdout
+    INT     21H
+    MOV     DL, 0AH                      ; Line feed character
+    MOV     AH, 02H                      ; Function 02H: Print character to stdout
+    INT     21H
+
+    ; Print the prompt message again
+    LEA     DX, USERNAME_PROMPT
+    CALL    PRINT
+
+    ; Print the updated string
+    LEA     DX, DB_TEMP
+    CALL    PRINT
+
+    ; Move the cursor to the end of the string
+    MOV     AH, 02H                       ; Function 02H: Set cursor position
+    MOV     BH, 00H                       ; Page number (0 = first page)
+    MOV     DH, 0                          ; Row (0 = top row)
+    MOV     DL, 13                         ; Start column (adjust as necessary)
+
+    ; Use an intermediate register to calculate the new cursor position
+MOV     AX, 0                          ; Clear AX
+MOV     AL, DL                         ; Move the starting column to AL
+ADD     AL, SI                         ; Add the length of the string to the column
+
+; Ensure that AL does not exceed 80 (if you're working in an 80-column mode)
+CMP     AL, 80
+JL      SetCursor                      ; If less than 80, set cursor
+MOV     AL, 79                         ; Otherwise, set to max column
+
+SetCursor:
+MOV     DL, AL                         ; Move the new column position to DL
+INT     10H                           ; Call BIOS video interrupt
+HANDLE_BACKSPACE_END:
+    JMP     GET_STRING_LOOP               ; Loop back to get the next character
 
 END_GET_STRING:
-    MOV     BYTE PTR [DI], 0             ; Null terminate the string
+    MOV     BYTE PTR [DI], 0              ; Null terminate the string
     RET
 GET_STRING ENDP
 
@@ -196,63 +247,12 @@ CLS ENDP
 
 ;==========================================================================================================
 ; Write to file (Function 40h)
-;==========================================================================================================
-WRITE_TO_FILE PROC NEAR
-    ; Open the file for appending
-    MOV     AH, 3Ch                        ; function 3Ch: create/open file
-    MOV     AL, 2                          ; mode: create
-    LEA     DX, STAFF_FILE                 ; filename
-    INT     21h                            ; call DOS interrupt
-    JC      error                          ; jump if error (carry flag set)
-
-    MOV     FILE_HANDLE, AX                ; save file handle
-    
-    ; Write username to file
-    MOV     AH, 40h                        ; function 40h: write to file
-    MOV     BX, FILE_HANDLE                ; file handle
-    LEA     DX, DB_TEMP                   ; address of the username buffer
-    MOV     CX, 20                         ; number of bytes to write (username)
-    INT     21h                            ; call DOS interrupt
-    JC      error                          ; jump if error (carry flag set)
-
-    ; Debug: Check if username is written correctly
-    LEA     DX, DB_TEMP                   ; Load address of username
-    CALL    PRINT                          ; Print the username for confirmation
-
-    ; Write password to file
-    MOV     AH, 40h                        ; function 40h: write to file
-    MOV     BX, FILE_HANDLE                ; file handle
-    LEA     DX, DB_TEMP_PASSWORD           ; address of the password buffer
-    MOV     CX, 20                         ; number of bytes to write (password)
-    INT     21h                            ; call DOS interrupt
-    JC      error                          ; jump if error (carry flag set)
-
-    ; Debug: Check if password is written correctly
-    LEA     DX, DB_TEMP_PASSWORD           ; Load address of password
-    CALL    PRINT                          ; Print the password for confirmation
-
-    ; Write newline to file (optional for readability)
-    MOV     AH, 40h                        ; function 40h: write to file
-    MOV     BX, FILE_HANDLE                ; file handle
-    LEA     DX, NEWLINE                    ; address of newline character
-    MOV     CX, 2                          ; number of bytes for newline (CR LF)
-    INT     21h                            ; call DOS interrupt
-    JC      error                          ; jump if error (carry flag set)
-
-    ; Close the file
-    MOV     AH, 3Eh                        ; function 3Eh: close file
-    MOV     BX, FILE_HANDLE                ; file handle
-    INT     21h                            ; call DOS interrupt
-
-    ; Indicate success
-    LEA     DX, successMsg                 ; Load success message
-    CALL    PRINT
-    RET
-
-error:
-    LEA     DX, errorMsg                   ; Load error message
-    CALL    PRINT
-    RET
-WRITE_TO_FILE ENDP
-
+;WRITE_TO_FILE PROC NEAR
+;    mov ah, 40h            ; Write to file
+;    mov bx, filehandle     ; File handle
+;    lea dx, buffer         ; DS:DX -> Buffer
+;    mov cx, buffersize     ; Number of bytes to write
+;    int 21h                ; DOS interrupt
+;    jc error               ; Jump if carry flag is set (error)
+;WRITE_TO_FILE ENDP
 END MAIN
