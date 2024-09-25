@@ -58,6 +58,13 @@ TITLE ITEM MENU
                             DB      "---------------------------------------------",CRLF, '$'
 	ITEMMODIFY_OPTIONS		DB  	"1 - Modify Name", CRLF,"2 - Modify Quantity", CRLF,"3 - Modify UnitPrice", CRLF, "0 - Exit", CRLF, "$"
 
+    ; DELETE MENU
+    DELETE_ITEM_LOGO        DB      "---------------------------------------------",CRLF
+                            DB      "|             DELETE ITEM MENU              |",CRLF
+                            DB      "---------------------------------------------",CRLF, '$'
+
+    ITEM_ID_PROMPT          DB      CRLF,"Enter ITEM Name      : $"
+
     ; STOCK_REPORT
 	STOCK_REPORT_HEADER     DB      "-------------------------------------------------------", CRLF
                         	DB      "| ITEM ID | Name        | Count | UnitPrice |  Worth  |", CRLF
@@ -128,14 +135,14 @@ ITEM_MENU_START:
 
 ITEM_MENU_OPTION1:
     CALL    ADD_ITEM_MENU
-    JMP     ITEM_MENU_OPTION0
+    JMP     ITEM_MENU_START
 ITEM_MENU_OPTION2:
     CALL    MODIFY_ITEM_MENU
-    JMP     ITEM_MENU_OPTION0
+    JMP     ITEM_MENU_START
 
 ITEM_MENU_OPTION3:
     CALL    DELETE_ITEM_MENU
-    JMP     ITEM_MENU_OPTION0
+    JMP     ITEM_MENU_START
 ITEM_MENU_OPTION0:
     RET
 ITEM_MENU ENDP
@@ -223,7 +230,7 @@ MODIFY_NAME:
     CALL    GET_STRING
     LEA     DX, STRING_BUFFER
     CALL    PRINT
-    RET
+    JMP     MODIFY_ITEM_MENU_START
 MODIFY_QUANTITY:
     LEA     DX, ITEM_QUANTITY_PROMPT
     CALL    PRINT
@@ -231,7 +238,7 @@ MODIFY_QUANTITY:
     CALL    GET_STRING
     LEA     DX, STRING_BUFFER
     CALL    PRINT
-    RET
+    JMP     MODIFY_ITEM_MENU_START
 MODIFY_UNITPRICE:
     LEA     DX, ITEM_UNITPRICE_PROMPT
     CALL    PRINT
@@ -239,14 +246,38 @@ MODIFY_UNITPRICE:
     CALL    GET_STRING
     LEA     DX, STRING_BUFFER
     CALL    PRINT
+    JMP     MODIFY_ITEM_MENU_START
 MODIFY_EXIT:
     RET
 MODIFY_ITEM_MENU ENDP
 
 ; DELETE_ITEM_MENU
 DELETE_ITEM_MENU PROC NEAR
+    CALL    CLS
+    LEA     DX, DELETE_ITEM_LOGO
+    CALL    PRINT
+
+    MOV     BX, OFFSET STRING_BUFFER
+    CALL    GET_STRING
+    LEA     DX, STRING_BUFFER
+    CALL    PRINT
+    JMP     MODIFY_ITEM_MENU_START
     RET
 DELETE_ITEM_MENU ENDP
+
+; VIEW_REPORT_MENU
+STOCK_REPORT    PROC    NEAR
+    MOVE    DX, STOCK_REPORT_HEADER
+    CALL    PRINT
+
+    MOVE    DX, STOCK_REPORT_FOOTER
+    CALL    PRINT
+    
+    RET
+STOCK_REPORT ENDP
+
+; ITEM - SPECIFIC FUNCTIONS
+GENERATE_ID
 
 ; GENERAL PURPOSE FUNCTIONS
 ;==========================================================================================================
