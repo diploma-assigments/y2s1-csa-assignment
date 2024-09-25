@@ -137,6 +137,20 @@ EXIT_PROGRAM:
 MAIN ENDP
 
 ;==========================================================================================================
+GET_STAFF_ID PROC NEAR
+    MOV     CX, 7
+
+    GET_STAFF_ID_LOOP:
+    MOV     AH, 01H
+    INT     21H
+    // STORE INTO STAFF_ID[I]
+
+    LOOP    GET_STAFF_ID_LOOP
+    // SET STAFF_ID[8] AS $
+
+
+GET_STAFF_ID ENDP
+;==========================================================================================================
 ; Procedure to get user input (single character)
 GET_INPUT PROC NEAR
     MOV     AH, 01H                      ; function 01H: Read single character from stdin

@@ -5,7 +5,7 @@
     FILE_HANDLE         DW  ?                 ; File handle
     READ_BUFFER         DB  50 DUP (?)        ; Buffer to store the read data
     BYTES_READ          DW  ?                 ; Number of bytes read
-    EMPLOYEE_ID         DB  9 DUP ('$')       ; Buffer for employee ID (extra byte for $)
+    EMPLOYEE_ID         DB  10 DUP ('$')       ; Buffer for employee ID (extra byte for $)
     PASSWORD            DB  21 DUP ('$')      ; Buffer for password (extra byte for $)
     COMMA_FOUND         DB  0                 ; Flag for comma detection
     NEWLINE             DB  0Ah, '$'          ; Newline for printing
