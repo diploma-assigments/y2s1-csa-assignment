@@ -397,9 +397,9 @@ STAFF_SIGNUP PROC NEAR
     COMPLETE_STORING_STAFF_END:
     LEA     dx, LongLine
     call    PRINTLN
-    lea     dx, STAFF_SLOT_2_ID
+    lea     dx, STAFF_ID_INPUT
     call    PRINTLN
-    lea     dx, STAFF_SLOT_2_PASSWORD
+    lea     dx, STAFF_PASSWORD_INPUT
     call    PRINTLN
     call    GET_CHAR_INPUT
 
