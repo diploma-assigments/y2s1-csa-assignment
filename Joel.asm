@@ -14,8 +14,8 @@ TITLE ITEM MENU
     TEN                 DW      10
 
     UNIT_PRICE              DB      "123456", '$'  ; String to check for comma
-    CONTAIN_STRING          DB      "xxxxxx", '$'
-    CONTAIN_STRING2         DB      "xxxxxx", '$'
+    CONTAIN_STRING          DB      21 DUP('$')
+    CONTAIN_STRING2         DB      21 DUP('$')
     STRING_BUFFER DB 21 DUP(0) ; Allocate space for the string (20 chars + 1 for null terminator)
 
 	x EQU 4 ; No. of Attributes in Item
@@ -70,9 +70,12 @@ TITLE ITEM MENU
                         	DB      "| ITEM ID | Name        | Count | UnitPrice |  Worth  |", CRLF
                             DB      "-------------------------------------------------------", CRLF, '$'
 	STOCK_EACH				DB		"|         |             |       |           |         |", CRLF, '$'		;9, 13, 6, 11,7
-                            DB      "-------------------------------------------------------", CRLF
-    STOCK_REPORT_FOOTER		DB		"|                        Total Stock Worth: |         |", CRLF
+    STOCK_REPORT_FOOTER     DB      "-------------------------------------------------------", CRLF
+                    		DB		"|                        Total Stock Worth: |         |", CRLF
                             DB      "-------------------------------------------------------", CRLF, '$'          ;42, 7
+
+    TESTSTR1    DB  "Test",'$'
+    TESTSTR2    DB  "Test",'$'
 .CODE
 
 MAIN PROC FAR
@@ -83,28 +86,32 @@ MAIN PROC FAR
 
     ; LEA     DX, UNIT_PRICE
     ; CALL    PRINT
-MAIN_START:
-    CALL    ITEM_MENU
-    ; CALL    CLS
-    ; LEA     SI,TESTSTR1
-    ; LEA     DI,CONTAIN_STRING
-    ; CALL    COPY_STRING
-    ; LEA     SI,TESTSTR2
-    ; LEA     DI,CONTAIN_STRING2
-    ; CALL    COPY_STRING
-    ; MOV     AL,0
-    ; LEA     DX, CONTAIN_STRING
-    ; CALL    PRINT
+; MAIN_START:
+    ; CALL    ITEM_MENU
+;     CALL    CLS
+;     LEA     SI,TESTSTR1
+;     LEA     DI,CONTAIN_STRING
+;     CALL    COPY_STRING
+;     LEA     SI,TESTSTR2
+;     LEA     DI,CONTAIN_STRING2
+;     CALL    COPY_STRING
+;     MOV     AL,0
+;     LEA     DX, CONTAIN_STRING
+;     CALL    PRINT
 
-    ; LEA     DX, CONTAIN_STRING2
-    ; CALL    PRINT
+;     LEA     DX, CONTAIN_STRING2
+;     CALL    PRINT
 
-    ; CALL    COMPARE_STRINGS
-    ; CMP     AL,1
-    ; JE      MAIN_START
+;     CALL    COMPARE_STRINGS
+;     CMP     AL,0
+;     JE      MAIN_START
 
+    MOV     BX, OFFSET CONTAIN_STRING ; Pass the address of the storage
+    CALL    GET_STRING                 ; Call the GET_STRING procedure
 
-
+    ; Optional: Print the entered string
+    MOV     DX, OFFSET CONTAIN_STRING  ; Load address of the string
+    CALL    PRINT                       ; Print the string
 
     ; Exit the program
     MOV     AX, 4C00H              ; Terminate program
@@ -253,6 +260,7 @@ MODIFY_ITEM_MENU ENDP
 
 ; DELETE_ITEM_MENU
 DELETE_ITEM_MENU PROC NEAR
+DELETE_MENU_START:
     CALL    CLS
     LEA     DX, DELETE_ITEM_LOGO
     CALL    PRINT
@@ -261,23 +269,23 @@ DELETE_ITEM_MENU PROC NEAR
     CALL    GET_STRING
     LEA     DX, STRING_BUFFER
     CALL    PRINT
-    JMP     MODIFY_ITEM_MENU_START
+    JMP     DELETE_MENU_START
     RET
 DELETE_ITEM_MENU ENDP
 
 ; VIEW_REPORT_MENU
 STOCK_REPORT    PROC    NEAR
-    MOVE    DX, STOCK_REPORT_HEADER
+    LEA    DX, STOCK_REPORT_HEADER
     CALL    PRINT
 
-    MOVE    DX, STOCK_REPORT_FOOTER
+    LEA    DX, STOCK_REPORT_FOOTER
     CALL    PRINT
     
     RET
 STOCK_REPORT ENDP
 
 ; ITEM - SPECIFIC FUNCTIONS
-GENERATE_ID
+; GENERATE_ID
 
 ; GENERAL PURPOSE FUNCTIONS
 ;==========================================================================================================
@@ -484,29 +492,30 @@ INDEX_OF ENDP
 ; Returns:
 
 COMPARE_STRINGS PROC NEAR
-    MOV     AL, 1                  ; Assume strings are equal
-    MOV     SI, 0                  ; Reset index for comparison
+    MOV     SI, 0                      ; Reset index for comparison
 
 COMPARE_LOOP:
-    MOV     BL, CONTAIN_STRING[SI] ; Load current character from first string
-    MOV     CL, CONTAIN_STRING2[SI] ; Load current character from second string
-    CMP     BL, CL                 ; Compare characters
-    JNE     STRINGS_NOT_EQUAL      ; Jump if not equal
+    MOV     AL, CONTAIN_STRING[SI]     ; Load current character from first string
+    MOV     BL, CONTAIN_STRING2[SI]     ; Load current character from second string
 
-    CMP     BL, '$'                ; Check if end of first string
-    JE      STRINGS_EQUAL          ; Jump if equal (both strings ended)
+    CMP     AL, BL                      ; Compare characters
+    JNE     STRINGS_NOT_EQUAL           ; Jump if not equal
 
-    CMP     CL, '$'                ; Check if end of second string
-    JE      STRINGS_NOT_EQUAL      ; Jump if not equal (one string ended)
+    CMP     AL, '$'                     ; Check if end of first string
+    JE      STRINGS_EQUAL               ; Jump if equal (both strings ended)
 
-    INC     SI                     ; Increment index
-    JMP     COMPARE_LOOP           ; Repeat loop
+    CMP     BL, '$'                     ; Check if end of second string
+    JE      STRINGS_NOT_EQUAL           ; Jump if one string ended
+
+    INC     SI                          ; Increment index
+    JMP     COMPARE_LOOP                ; Repeat loop
 
 STRINGS_NOT_EQUAL:
-    MOV     AL, 0                  ; Set AL to 0 for not equal
+    MOV     AL, 0                       ; Set AL to 0 for not equal
     RET
 
 STRINGS_EQUAL:
+    MOV     AL, 1                       ; Set AL to 1 for equal
     RET
 COMPARE_STRINGS ENDP
 
@@ -537,35 +546,47 @@ GET_INPUT ENDP
 ;==========================================================================================================
 ; Procedure to get a string from user input (up to 20 characters)
 GET_STRING PROC NEAR
-    MOV     CX, 20                       ; max length
-    MOV     DI, BX                       ; DI points to the destination (string)
-    MOV     SI, 0                         ; initialize a counter for the string length
+    MOV     CX, 20                     ; Max length
+    MOV     DI, BX                      ; DI points to the destination (string)
+    MOV     SI, 0                       ; Initialize a counter for the string length
 
 GET_STRING_LOOP:
-    CALL    GET_INPUT                    ; Get a single character
-    CMP     AL, 08H                      ; Check if Backspace key is pressed
+    CALL    GET_INPUT                   ; Get a single character
+    CMP     AL, 08H                     ; Check if Backspace key is pressed
     JE      HANDLE_BACKSPACE            ; If yes, handle backspace
 
-    CMP     AL, 0DH                      ; Check if Enter key (carriage return) is pressed
-    JE      END_GET_STRING               ; If yes, end the input loop
+    CMP     AL, 0DH                     ; Check if Enter key (carriage return) is pressed
+    JE      END_GET_STRING              ; If yes, end the input loop
 
-    STOSB                                 ; Store character in DB_TEMP or password storage
-    INC     SI                           ; increment the string length counter
-    LOOP    GET_STRING_LOOP              ; Loop until the max length is reached
+    ; Store character if within max length
+    CMP     SI, 20                      ; Compare length counter with max length
+    JAE     END_GET_STRING              ; If SI >= 20, jump to end
+
+    STOSB                                ; Store character in the destination
+    INC     SI                           ; Increment the string length counter
+    JMP     GET_STRING_LOOP              ; Loop until the max length is reached
 
 HANDLE_BACKSPACE:
-    CMP     SI, 0                         ; Check if the string is empty
-    JE      GET_STRING_LOOP              ; If yes, do nothing
+    CMP     SI, 0                       ; Check if the string is empty
+    JE      GET_STRING_LOOP             ; If yes, do nothing
 
-    DEC     SI                           ; decrement the string length counter
-    MOV     AL, 20H                      ; ASCII code for space
-    STOSB                                 ; overwrite the previous character with a space
-    MOV     AL, 08H                      ; ASCII code for backspace
-    CALL    PRINT_CHAR                   ; print the backspace character
-    JMP     GET_STRING_LOOP              ; loop back to get the next character
+    DEC     SI                           ; Decrement the string length counter
+    MOV     AL, 20H                     ; ASCII code for space
+    STOSB                                ; Overwrite the previous character with a space
+    MOV     AL, 08H                     ; ASCII code for backspace
+    CALL    PRINT_CHAR                   ; Print the backspace character
+    JMP     GET_STRING_LOOP              ; Loop back to get the next character
 
 END_GET_STRING:
-    MOV     BYTE PTR [DI], '$'             ; Null terminate the string
+    ; Add the '$' terminator only if something was entered
+    CMP     SI, 0                       ; Check if anything was entered
+    JE      NO_INPUT                    ; If no input, skip adding '$'
+
+    MOV     BYTE PTR [DI], '$'          ; Null terminate the string
+    RET
+
+NO_INPUT:
+    MOV     BYTE PTR [DI], '$'          ; Ensure a terminator even if no input was entered
     RET
 GET_STRING ENDP
 
