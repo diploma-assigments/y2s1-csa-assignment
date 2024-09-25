@@ -27,22 +27,22 @@ TITLE ITEM MENU
     ITEM_SLOT_1_EMPTY      DB      0
     ITEM_SLOT_1_ID         DB      '0001$'
     ITEM_SLOT_1_Quantity   DB      123
-    ITEM_SLOT_1_UNITPRICE  DB      12467
+    ITEM_SLOT_1_UNITPRICE  DW      12467
 
     ITEM_SLOT_2_EMPTY      DB      1
     ITEM_SLOT_2_ID         DB      '0002$'
     ITEM_SLOT_2_Quantity   DB      8 DUP(0)
-    ITEM_SLOT_2_UNITPRICE  DB      21 DUP(0)
+    ITEM_SLOT_2_UNITPRICE  DW      21 DUP(0)
 
     ITEM_SLOT_3_EMPTY      DB      1
-    ITEM_SLOT_2_ID         DB      '0003$'
-    ITEM_SLOT_2_Quantity   DB      8 DUP(0)
-    ITEM_SLOT_2_UNITPRICE  DB      21 DUP(0)
+    ITEM_SLOT_3_ID         DB      '0003$'
+    ITEM_SLOT_3_Quantity   DB      8 DUP(0)
+    ITEM_SLOT_3_UNITPRICE  DW      21 DUP(0)
 
     ITEM_SLOT_4_EMPTY      DB      1
-    ITEM_SLOT_2_ID         DB      '0004$'
-    ITEM_SLOT_2_Quantity   DB      8 DUP(0)
-    ITEM_SLOT_2_UNITPRICE  DB      21 DUP(0)
+    ITEM_SLOT_4_ID         DB      '0004$'
+    ITEM_SLOT_4_Quantity   DB      8 DUP(0)
+    ITEM_SLOT_4_UNITPRICE  DW      21 DUP(0)
 
 
     WHOLE_NUM           DW      12345
@@ -244,8 +244,8 @@ CONFIRM_START:
 
     JMP     CONFIRM_START
 CONFIRM_ADD:
-    CALL    FORMAT_ID            
-    CALL    STORE_ITEM
+    CALL    FORMAT_ID
+    
 CONFIRM_END:
     RET
 CONFIRMATION_MSG ENDP
@@ -323,7 +323,7 @@ STOCK_REPORT    PROC    NEAR
     CALL    PRINT
 
         MOV     CX, 10                    ; Number of items to view
-    MOV     SI, OFFSET ITEMS          ; Start address of the ITEMS array
+    ; MOV     SI, OFFSET ITEMS          ; Start address of the ITEMS array
 
 VIEW_LOOP:
     ; Print Item Name
@@ -397,7 +397,7 @@ FORMAT_ID ENDP
 ; It assumes you want to store at the first position of the array (index 0)
 STORE_ITEM PROC
     MOV SI, OFFSET DB_TEMP_NAME       ; Point to the temporary name buffer
-    MOV DI, OFFSET ITEMS              ; Point to the first item in the ITEMS array
+    ; MOV DI, OFFSET ITEMS              ; Point to the first item in the ITEMS array
 
     ; Copy Name (20 bytes)
     MOV CX, 20                        ; Set count to 20 bytes for Name
@@ -664,23 +664,10 @@ MOVEUPANDCLEAR PROC NEAR
 MOVEUPANDCLEAR ENDP
 
 ;==========================================================================================================
-CLEAR_PROMPT PROC NEAR
-; Clear left until prompt message
-    MOV     AH, 02H                 ; Function to set cursor position
-    MOV     DL, 0                    ; Row (current row)
-    MOV     DH, 0                    ; Column (leftmost position)
-    INT     10H                      ; Set cursor position
-
-    MOV     AH, 02H                     ; Function to set cursor position
-    MOV     DL, 0                        ; Row (0 for top of the screen)
-    MOV     DH, 0                        ; Column (0 for leftmost)
-    INT     10H                          ; Set cursor position
-
-    RET
-CLEAR_PROMPT ENDP
-
-;==========================================================================================================
 ; Procedure to get String input
+;==========================================================================================================
+; MOV CX, MAXLENGTH
+; LEA DI, <VAR_NAME (var to store into)>
 GET_STRING_INPUT PROC NEAR
     GET_STRING_INPUT_LOOP:
     MOV AH, 01H                      ; Function to read character from standard input
