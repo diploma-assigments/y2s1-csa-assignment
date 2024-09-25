@@ -33,9 +33,9 @@ GET_STAFF_ID_LOOP:
     JE DONE_INPUT            ; If Enter key, jump to done input
     MOV [DI], AL             ; Store the character in STAFF_ID
     INC DI                   ; Move to the next position in STAFF_ID
-    LOOP GET_STAFF_ID_LOOP   ; Repeat until CX is 0
+    LOOP GET_STAFF_ID_DONE_INPUT   ; Repeat until CX is 0
 
-DONE_INPUT:
+GET_STAFF_ID_DONE_INPUT:
     MOV BYTE PTR [DI], '$'   ; Set end of string
 
     RET

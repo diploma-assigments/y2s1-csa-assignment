@@ -5,7 +5,10 @@
     DB_TEMP_PASSWORD        DB      20 DUP(0) ; Separate storage for password
     DW_TEMP				    DW      ?
     SELECTED_OPTION         DB      ?         ; Store selected option
+    STAFF_ID_INPUT          DB      8 DUP(0)
+    STAFF_PASSWORD_INPUT    DB      21 DUP(0)
     CRLF                    EQU     0DH, 0AH 
+    NEWLINE                 DB      0DH, 0AH, "$"
 
     MAINMENU_OPTIONS        DB      "1 - Staff Log In", CRLF, "2 - Staff Sign Up", CRLF, "0 - Exit", CRLF, "$"
     PROMPT_MSG              DB      CRLF, "Select an option: $"
@@ -76,22 +79,28 @@ STAFF_LOGIN:
     ; Get username
     LEA     DX, USERNAME_PROMPT
     CALL    PRINT
-    MOV     BX, OFFSET DB_TEMP          ; Address of the username storage
-    CALL    GET_STRING                   ; Read username
+    MOV     CX, 7
+    LEA     DI, STAFF_ID_INPUT
+    CALL    GET_STRING_INPUT
 
     ; Get password
     LEA     DX, PASSWORD_PROMPT
     CALL    PRINT
-    MOV     BX, OFFSET DB_TEMP_PASSWORD  ; Address of the password storage
-    CALL    GET_STRING                   ; Read password
+    MOV     CX, 20
+    LEA     DI, STAFF_PASSWORD_INPUT
+    CALL    GET_STRING_INPUT
 
+    LEA     DX, STAFF_ID_INPUT
+    CALL    PRINT
+    CALL    PRINT_NEW_LINE
+    LEA     DX, STAFF_PASSWORD_INPUT
+    CALL    PRINT
+
+    MOV AH, 01h
+    INT 21H
     ; Confirm login attempt
     LEA     DX, SIGNUP_SUCCESS           ; Use the success message to confirm login attempt
     CALL    PRINT
-    
-    ; Optionally, print the username to confirm
-    LEA     DX, DB_TEMP                  ; Load address of username
-    CALL    PRINT                         ; Print the username
 
     JMP     MAIN_LOOP                    ; Go back to main loop
 
@@ -137,19 +146,23 @@ EXIT_PROGRAM:
 MAIN ENDP
 
 ;==========================================================================================================
-GET_STAFF_ID PROC NEAR
-    MOV     CX, 7
+; MOV CX, MAXLENGTH
+; LEA DI, <VAR_NAME (var to store into)>
+GET_STRING_INPUT PROC NEAR
+    GET_STRING_INPUT_LOOP:
+    MOV AH, 01H                      ; Function to read character from standard input
+    INT 21H                          ; Call DOS interrupt
+    CMP AL, 0Dh                      ; Check if Enter key is pressed (Carriage Return)
+    JE GET_STRING_INPUT_DONE_INPUT                    ; If Enter key, jump to done input
+    MOV [DI], AL                     ; Store the character in STAFF_ID
+    INC DI                           ; Move to the next position in STAFF_ID
+    LOOP GET_STRING_INPUT_LOOP       ; Repeat until CX is 0
 
-    GET_STAFF_ID_LOOP:
-    MOV     AH, 01H
-    INT     21H
-    // STORE INTO STAFF_ID[I]
+    GET_STRING_INPUT_DONE_INPUT:
+    MOV BYTE PTR [DI], '$'   ; Set end of string
 
-    LOOP    GET_STAFF_ID_LOOP
-    // SET STAFF_ID[8] AS $
-
-
-GET_STAFF_ID ENDP
+    RET
+GET_STRING_INPUT ENDP
 ;==========================================================================================================
 ; Procedure to get user input (single character)
 GET_INPUT PROC NEAR
@@ -176,6 +189,14 @@ END_GET_STRING:
     MOV     BYTE PTR [DI], 0             ; Null terminate the string
     RET
 GET_STRING ENDP
+
+;==========================================================================================================
+PRINT_NEW_LINE PROC NEAR
+    MOV     AH, 09H
+    LEA     DX, NEWLINE
+    INT     21H
+    RET
+PRINT_NEW_LINE ENDP
 
 ;==========================================================================================================
 ; Procedure to print string (assumes DX holds address of string)
