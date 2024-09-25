@@ -1,15 +1,6 @@
 .MODEL SMALL                 ; declare small memory model
 .STACK 64                    ; declare stack segment
 .DATA
-        WHOLE_NUM DW 12345
-        UNIT_PRICE DB "000000", '$' 
-
-        TEN_THOUSAND DW 10000
-        THOUSAND    DW 1000
-        HUNDRED     DW 100                  ; Constant for division
-        TEN         DW 10                   ; Constant for division
-
-
     DB_TEMP                 DB      20 DUP(0) ; Temporary data for username/password (20 bytes max)
     DB_TEMP_PASSWORD        DB      20 DUP(0) ; Separate storage for password
     DW_TEMP				    DW      ?
@@ -155,45 +146,47 @@ GET_INPUT ENDP
 
 ;==========================================================================================================
 ; Procedure to get a string from user input (up to 20 characters)
-;==========================================================================================================
-; Procedure to get a string from user input (up to 20 characters)
+
 GET_STRING PROC NEAR
     MOV     CX, 20                       ; max length
     MOV     DI, BX                       ; DI points to the destination (string)
-    MOV     SI, 0                         ; initialize a counter for the string length
+    MOV     BYTE PTR [DI], 0             ; Null terminate the string initially
+    XOR     SI, SI                       ; Initialize SI as length counter
 
 GET_STRING_LOOP:
     CALL    GET_INPUT                    ; Get a single character
-    CMP     AL, 08H                      ; Check if Backspace key is pressed
-    JE      HANDLE_BACKSPACE            ; If yes, handle backspace
-
     CMP     AL, 0DH                      ; Check if Enter key (carriage return) is pressed
     JE      END_GET_STRING               ; If yes, end the input loop
 
+    CMP     AL, 0BH                      ; Check for backspace (ASCII 0x08)
+    JE      BACKSPACE                    ; If backspace is pressed, handle it
+
+    CMP     SI, 19                       ; Check if string is full (20 characters including null terminator)
+    JAE     GET_STRING_LOOP              ; If full, ignore further input
+
     STOSB                                 ; Store character in DB_TEMP or password storage
-    INC     SI                           ; increment the string length counter
-    LOOP    GET_STRING_LOOP              ; Loop until the max length is reached
+    INC     SI                           ; Increment length counter
+    INC     DI                           ; Move DI to the next position for the next character
+    JMP     GET_STRING_LOOP              ; Continue the loop
 
-HANDLE_BACKSPACE:
-    CMP     SI, 0                         ; Check if the string is empty
-    JE      GET_STRING_LOOP              ; If yes, do nothing
+BACKSPACE:
+    CMP     SI, 0                        ; Check if at the beginning of the string
+    JBE     GET_STRING_LOOP              ; If so, do nothing (ignore backspace)
 
-    DEC     SI                           ; decrement the string length counter
-    MOV     AL, 20H                      ; ASCII code for space
-    STOSB                                 ; overwrite the previous character with a space
-    MOV     AL, 08H                      ; ASCII code for backspace
-    CALL    PRINT_CHAR                   ; print the backspace character
-    JMP     GET_STRING_LOOP              ; loop back to get the next character
+    DEC     DI                           ; Move DI back to the last character position
+    DEC     SI                           ; Decrease length counter
+    MOV BYTE PTR [DI], 0                 ; Null terminate after deleting
+
+    ; Overwrite the last character with a space (optional, just for visual)
+    ; This will allow the user to see a blank space where they deleted a character
+    MOV BYTE PTR [DI], ' '               ; Optional: Write a space for visual feedback
+
+    JMP     GET_STRING_LOOP               ; Continue to get input
 
 END_GET_STRING:
     MOV     BYTE PTR [DI], 0             ; Null terminate the string
     RET
-
-PRINT_CHAR PROC NEAR
-    MOV     AH, 02H                      ; function 02H - Print character to stdout
-    INT     21H
-    RET
-PRINT_CHAR ENDP
+GET_STRING ENDP
 
 ;==========================================================================================================
 ; Procedure to print string (assumes DX holds address of string)
@@ -221,13 +214,52 @@ CLS PROC NEAR
 CLS ENDP
 
 ;==========================================================================================================
-; Write to file (Function 40h)
+; Procedure to write username and password to staff.txt
+
 WRITE_TO_FILE PROC NEAR
-    mov ah, 40h            ; Write to file
-    mov bx, filehandle     ; File handle
-    lea dx, buffer         ; DS:DX -> Buffer
-    mov cx, buffersize     ; Number of bytes to write
-    int 21h                ; DOS interrupt
-    jc error               ; Jump if carry flag is set (error)
+    ; Create/Open the file
+    MOV     AH, 3Ch                        ; DOS function to create a file
+    MOV     CX, 0                          ; File attributes (normal)
+    LEA     DX, FILENAME                   ; Load the file name
+    INT     21h                            ; Call DOS
+    JC      FILE_ERROR                      ; Jump if there is an error
+    MOV     FILE_HANDLE, AX                 ; Store the file handle
+
+    ; Write username
+    MOV     AH, 40h                        ; DOS function to write to a file
+    MOV     BX, FILE_HANDLE                ; File handle
+    LEA     DX, DB_TEMP                   ; Load the address of the username
+    MOV     CX, 20                         ; Write up to 20 bytes for the username
+    INT     21h                            ; Call DOS
+    JC      FILE_ERROR                      ; Jump if there is an error
+
+    ; Optionally write a newline or separator
+    MOV     AH, 40h                        ; DOS function to write to a file
+    MOV     BX, FILE_HANDLE                ; File handle
+    LEA     DX, CRLF                      ; Load the address of CRLF for a newline
+    MOV     CX, 2                          ; Write CRLF (2 bytes)
+    INT     21h                            ; Call DOS
+    JC      FILE_ERROR                      ; Jump if there is an error
+
+    ; Write password
+    MOV     AH, 40h                        ; DOS function to write to a file
+    MOV     BX, FILE_HANDLE                ; File handle
+    LEA     DX, DB_TEMP_PASSWORD          ; Load the address of the password
+    MOV     CX, 20                         ; Write up to 20 bytes for the password
+    INT     21h                            ; Call DOS
+    JC      FILE_ERROR                      ; Jump if there is an error
+
+    ; Close the file
+    MOV     AH, 3Eh                        ; DOS function to close a file
+    MOV     BX, FILE_HANDLE                ; File handle
+    INT     21h                            ; Call DOS
+    JC      FILE_ERROR                      ; Jump if there is an error
+
+    RET
+
+FILE_ERROR:
+    ; Handle file error (optional: print error message)
+    RET
 WRITE_TO_FILE ENDP
+
 END MAIN

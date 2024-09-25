@@ -6,6 +6,7 @@
     FILE_HANDLE     DW ?                ; File handle
 
 .CODE
+
 MAIN PROC
     ; Set up data segment
     MOV AX, @DATA
