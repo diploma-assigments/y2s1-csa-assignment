@@ -1,9 +1,6 @@
 .MODEL SMALL                 ; declare small memory model
 .STACK 64                    ; declare stack segment
 .DATA
-    DB_TEMP                 DB      20 DUP(0) ; Temporary data for username/password (20 bytes max)
-    DB_TEMP_PASSWORD        DB      20 DUP(0) ; Separate storage for password
-    DW_TEMP				    DW      ?
     COMPARE_STRING1         DB      21 DUP(0)
     COMPARE_STRING2         DB      21 DUP(0)
 
@@ -16,6 +13,8 @@
     STAFF_PASSWORD_INPUT    DB      21 DUP(0)
     
     ; Data stores
+    STAFF_SLOT_FULL         DB      0
+
     STAFF_SLOT_1_EMPTY      DB      0
     STAFF_SLOT_1_ID         DB      "STF0001$"
     STAFF_SLOT_1_PASSWORD   DB      "pass@123$"
@@ -44,7 +43,8 @@
     PROGRAM_EXIT_MSG        DB      CRLF, "Thank you for using the inventory system.$"
     USERNAME_PROMPT         DB      CRLF, "Enter username: $"
     PASSWORD_PROMPT         DB      CRLF, "Enter password: $"
-    
+    STAFF_CREATE_FULL_MSG   DB      CRLF, "No more slots to signup staff.$"
+
     LongLine				DB  	"---------------------------------------------", CRLF, "$"
     ITEMMENU_OPTIONS		DB  	"1 - Add Item", CRLF, "2 - Modify item", CRLF, "3 - Delete item", CRLF, "0 - Exit", CRLF, "$"
 	ITEMMODIFYMENU			DB  	"1 - Modify Name", CRLF,"2 - Modify Quantity", CRLF,"3 - Modify UnitPrice", CRLF, "0 - Exit", CRLF, "$"
@@ -56,9 +56,6 @@
 	y EQU 20 ; No. Of Items
 	
 	ITEM_ARRAY DB x * y DUP(?) ; Allocate space for the 2D array
-    ; file operations
-    STAFF_FILE              DB      "staff.txt", 0
-    FILE_HANDLE             DW      ?
     
 ;==========================================================================================================
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -91,7 +88,7 @@ MAIN PROC FAR
     CALL_STAFF_LOGIN:
     CALL STAFF_LOGIN
     CALL_STAFF_SIGNUP:
-    ;CALL STAFF_SIGNUP
+    CALL STAFF_SIGNUP
     CALL_EXIT_PROGRAM:
     CALL EXIT_PROGRAM
 
@@ -209,34 +206,106 @@ STAFF_LOGIN PROC NEAR
 STAFF_LOGIN ENDP
 
 ;==========================================================================================================
-; STAFF_SIGNUP PROC NEAR
-;     CALL    CLS
+STAFF_SIGNUP PROC NEAR
+    CALL    CLS
 
-;     ; Display staff signup message
-;     LEA     DX, SIGNUP_HEADER
-;     CALL    PRINT
+    CMP     STAFF_SLOT_FULL, 0
+    JE      STAFF_CREATE_CONTINUE
 
-;     ; Get username
-;     LEA     DX, USERNAME_PROMPT
-;     CALL    PRINT
-;     MOV     BX, OFFSET DB_TEMP          ; Address of the username storage
-;     CALL    GET_STRING                   ; Read username
+    LEA     DX, STAFF_CREATE_FULL_MSG
+    CALL    PRINTLN
+    CALL    GET_CHAR_INPUT
+    JMP     MAIN_LOOP
 
-;     ; Get password
-;     LEA     DX, PASSWORD_PROMPT
-;     CALL    PRINT
-;     MOV     BX, OFFSET DB_TEMP_PASSWORD  ; Address of the password storage
-;     CALL    GET_STRING                   ; Read password
+    STAFF_CREATE_CONTINUE:
+    ; display menu header
+    LEA     DX, SIGNUP_HEADER
+    CALL    PRINT               
 
-;     ; Confirm signup success      DB      CRLF, ""
-;     LEA     DX, SIGNUP_SUCCESS_MSG   CALL    PRINT
+    ; Get username
+    LEA     DX, USERNAME_PROMPT
+    CALL    PRINT
+    MOV     CX, 7
+    LEA     DI, STAFF_ID_INPUT
+    CALL    GET_STRING_INPUT
 
-;     ; Print the username to confirm
-;     LEA     DX, DB_TEMP                  ; Load address of username
-;     CALL    PRINT                        ; Print the username
+    ; Get password
+    LEA     DX, PASSWORD_PROMPT
+    CALL    PRINT
+    MOV     CX, 20
+    LEA     DI, STAFF_PASSWORD_INPUT
+    CALL    GET_STRING_INPUT
 
-;     JMP     MAIN_LOOP
-; STAFF_SIGNUP ENDP
+    ; store the staff in an available slot
+    LEA     SI, STAFF_ID_INPUT
+    CMP     STAFF_SLOT_1_EMPTY, 1
+    JE      STORE_INTO_STAFF_SLOT_1
+    CMP     STAFF_SLOT_2_EMPTY, 1
+    JE      STORE_INTO_STAFF_SLOT_2
+    CMP     STAFF_SLOT_3_EMPTY, 1
+    JE      STORE_INTO_STAFF_SLOT_3
+    CMP     STAFF_SLOT_4_EMPTY, 1
+    JE      STORE_INTO_STAFF_SLOT_4
+    
+    STORE_INTO_STAFF_SLOT_1:
+    MOV     STAFF_SLOT_1_EMPTY, 0
+    LEA     DI, STAFF_SLOT_1_ID
+    CALL    COPY_STRING
+    LEA     SI, STAFF_PASSWORD_INPUT
+    LEA     DI, STAFF_SLOT_1_PASSWORD
+    CALL    COPY_STRING
+    JMP     COMPLETE_STORING_STAFF
+
+    STORE_INTO_STAFF_SLOT_2:
+    MOV     STAFF_SLOT_2_EMPTY, 0
+    LEA     DI, STAFF_SLOT_2_ID
+    CALL    COPY_STRING
+    LEA     SI, STAFF_PASSWORD_INPUT
+    LEA     DI, STAFF_SLOT_2_PASSWORD
+    CALL    COPY_STRING
+    JMP     COMPLETE_STORING_STAFF
+
+    STORE_INTO_STAFF_SLOT_3:
+    MOV     STAFF_SLOT_3_EMPTY, 0
+    LEA     DI, STAFF_SLOT_3_ID
+    CALL    COPY_STRING
+    LEA     SI, STAFF_PASSWORD_INPUT
+    LEA     DI, STAFF_SLOT_3_PASSWORD
+    CALL    COPY_STRING
+    JMP     COMPLETE_STORING_STAFF
+
+    STORE_INTO_STAFF_SLOT_4:
+    MOV     STAFF_SLOT_4_EMPTY, 0
+    LEA     DI, STAFF_SLOT_4_ID
+    CALL    COPY_STRING
+    LEA     SI, STAFF_PASSWORD_INPUT
+    LEA     DI, STAFF_SLOT_4_PASSWORD
+    CALL    COPY_STRING
+    JMP     COMPLETE_STORING_STAFF
+
+    COMPLETE_STORING_STAFF:
+    CMP     STAFF_SLOT_1_EMPTY, 0
+    JE      COMPLETE_STORING_STAFF_END
+    CMP     STAFF_SLOT_2_EMPTY, 0
+    JE      COMPLETE_STORING_STAFF_END
+    CMP     STAFF_SLOT_3_EMPTY, 0
+    JE      COMPLETE_STORING_STAFF_END
+    CMP     STAFF_SLOT_4_EMPTY, 0
+    JE      COMPLETE_STORING_STAFF_END
+
+    MOV     STAFF_SLOT_FULL, 1
+
+    COMPLETE_STORING_STAFF_END:
+    LEA     dx, LongLine
+    call    PRINTLN
+    lea     dx, STAFF_SLOT_2_ID
+    call    PRINTLN
+    lea     dx, STAFF_SLOT_2_PASSWORD
+    call    PRINTLN
+    call    GET_CHAR_INPUT
+
+    JMP     MAIN_LOOP
+STAFF_SIGNUP ENDP
 
 ;==========================================================================================================
 EXIT_PROGRAM PROC NEAR
