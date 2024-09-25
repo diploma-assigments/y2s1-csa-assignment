@@ -14,6 +14,36 @@ TITLE ITEM MENU
     DB_TEMP_QUANTITY         DB      4 DUP(0) ; Separate storage for password
     DB_TEMP_UNITPRICE        DB      6 DUP(0)
 
+    ITEM_SLOT_FULL         DB      0
+
+
+
+    
+
+
+
+
+
+    ITEM_SLOT_1_EMPTY      DB      0
+    ITEM_SLOT_1_ID         DB      '0001$'
+    ITEM_SLOT_1_Quantity   DB      123
+    ITEM_SLOT_1_UNITPRICE  DB      12467
+
+    ITEM_SLOT_2_EMPTY      DB      1
+    ITEM_SLOT_2_ID         DB      '0002$'
+    ITEM_SLOT_2_Quantity   DB      8 DUP(0)
+    ITEM_SLOT_2_UNITPRICE  DB      21 DUP(0)
+
+    ITEM_SLOT_3_EMPTY      DB      1
+    ITEM_SLOT_2_ID         DB      '0003$'
+    ITEM_SLOT_2_Quantity   DB      8 DUP(0)
+    ITEM_SLOT_2_UNITPRICE  DB      21 DUP(0)
+
+    ITEM_SLOT_4_EMPTY      DB      1
+    ITEM_SLOT_2_ID         DB      '0004$'
+    ITEM_SLOT_2_Quantity   DB      8 DUP(0)
+    ITEM_SLOT_2_UNITPRICE  DB      21 DUP(0)
+
 
     WHOLE_NUM           DW      12345
     TEN_THOUSAND        DW      10000
@@ -28,12 +58,11 @@ TITLE ITEM MENU
     COMPARE_STRING2         DB      21 DUP('$')
     STRING_BUFFER DB 21 DUP(0) ; Allocate space for the string (20 chars + 1 for null terminator)
 
-    ITEMS                    DB      10 DUP(20 DUP(0), 4 DUP(0), 6 DUP(0)) ; Array of 10 items
 
     ARRAY db 20,?,8 dup ("$")
 
     CRLF                    EQU     0DH, 0AH
-    ZERO                    DB     "0", '$'
+    NEWLINE                 DB      0DH, 0AH, "$"
 	LONGLINE				DB  	"---------------------------------------------", CRLF, "$"
 
     SELECTED_OPTION         DB      ?         ; Store selected option
@@ -100,13 +129,6 @@ MAIN PROC FAR
 ; MAIN_START:
     CALL    ITEM_MENU
 
-    MOV     BX, OFFSET CONTAIN_STRING1 ; Pass the address of the storage
-    CALL    GET_STRING                 ; Call the GET_STRING procedure
-
-    ; Optional: Print the entered string
-    MOV     DX, OFFSET CONTAIN_STRING1  ; Load address of the string
-    CALL    PRINT                       ; Print the string
-
     ; Exit the program
     MOV     AX, 4C00H              ; Terminate program
     INT     21H
@@ -122,7 +144,7 @@ ITEM_MENU_START:
     CALL    PRINT
     LEA     DX, PROMPT_MSG
     CALL    PRINT
-    CALL    GET_INPUT
+    CALL    GET_CHAR_INPUT
     MOV     SELECTED_OPTION, AL
 
     CMP     SELECTED_OPTION, 30H
@@ -135,6 +157,8 @@ ITEM_MENU_START:
     JE      ITEM_MENU_OPTION3
     CMP     SELECTED_OPTION, 34H
     JE      ITEM_MENU_OPTION4
+    CMP     SELECTED_OPTION, 35H
+    JE      ITEM_MENU_OPTION5
     JMP     ITEM_MENU_START
 
 ITEM_MENU_OPTION1:
@@ -149,6 +173,9 @@ ITEM_MENU_OPTION3:
     JMP     ITEM_MENU_START
 ITEM_MENU_OPTION4:
     CALL    STOCK_REPORT
+    JMP     ITEM_MENU_START
+ITEM_MENU_OPTION5:
+    ; CALL    STOCK_REPORT
     JMP     ITEM_MENU_START
 ITEM_MENU_OPTION0:
     RET
@@ -195,7 +222,8 @@ ITEM_PROMPT3:
     JNE     ADD_ITEM_EXIT
     CALL    MOVEUPANDCLEAR
     JMP     ITEM_PROMPT3
-
+    CALL    CLEAR_BUFFER
+    call    GET_CHAR_INPUT
     CALL    CONFIRMATION_MSG
 ADD_ITEM_EXIT:
     RET
@@ -205,13 +233,14 @@ ADD_ITEM_MENU ENDP
 CONFIRMATION_MSG PROC NEAR
 CONFIRM_START:
     CALL    CLS
+    MOV     DX,0
     LEA     DX, CONFIRM_ADD_MESSAGE_PROMPT
     CALL    PRINT
-    CALL    GET_INPUT
-    CMP     AL,0
-    JE      CONFIRM_END
-    CMP     AL,1
-    JE      CONFIRM_ADD
+    ; CALL    GET_CHAR_INPUT
+    ; CMP     AL,0
+    ; JE      CONFIRM_END
+    ; CMP     AL,1
+    ; JE      CONFIRM_ADD
 
     JMP     CONFIRM_START
 CONFIRM_ADD:
@@ -231,7 +260,7 @@ MODIFY_ITEM_MENU_START:
     CALL    PRINT
     LEA     DX, PROMPT_MSG
     CALL    PRINT
-    CALL    GET_INPUT
+    CALL    GET_CHAR_INPUT
     MOV     SELECTED_OPTION, AL
     CMP     SELECTED_OPTION, 30H
     JE      MODIFY_EXIT
@@ -243,26 +272,29 @@ MODIFY_ITEM_MENU_START:
     JE      MODIFY_UNITPRICE
 
 MODIFY_NAME:
+    CALL    CLS
     LEA     DX, ITEM_NAME_PROMPT
     CALL    PRINT
     MOV     BX, OFFSET STRING_BUFFER
-    CALL    GET_STRING
+    CALL    GET_STRING_INPUT
     LEA     DX, STRING_BUFFER
     CALL    PRINT
     JMP     MODIFY_ITEM_MENU_START
 MODIFY_QUANTITY:
+    CALL    CLS
     LEA     DX, ITEM_QUANTITY_PROMPT
     CALL    PRINT
     MOV     BX, OFFSET STRING_BUFFER
-    CALL    GET_STRING
+    CALL    GET_STRING_INPUT
     LEA     DX, STRING_BUFFER
     CALL    PRINT
     JMP     MODIFY_ITEM_MENU_START
 MODIFY_UNITPRICE:
+    CALL    CLS
     LEA     DX, ITEM_UNITPRICE_PROMPT
     CALL    PRINT
     MOV     BX, OFFSET STRING_BUFFER
-    CALL    GET_STRING
+    CALL    GET_STRING_INPUT
     LEA     DX, STRING_BUFFER
     CALL    PRINT
     JMP     MODIFY_ITEM_MENU_START
@@ -278,7 +310,7 @@ DELETE_MENU_START:
     CALL    PRINT
 
     MOV     BX, OFFSET STRING_BUFFER
-    CALL    GET_STRING
+    CALL    GET_STRING_INPUT
     LEA     DX, STRING_BUFFER
     CALL    PRINT
     JMP     DELETE_MENU_START
@@ -289,6 +321,26 @@ DELETE_ITEM_MENU ENDP
 STOCK_REPORT    PROC    NEAR
     LEA    DX, STOCK_REPORT_HEADER
     CALL    PRINT
+
+        MOV     CX, 10                    ; Number of items to view
+    MOV     SI, OFFSET ITEMS          ; Start address of the ITEMS array
+
+VIEW_LOOP:
+    ; Print Item Name
+    LEA     DX, [SI]                  ; Load address of item name
+    CALL    PRINT                      ; Print item name
+    ; Print Item Quantity
+    ADD     SI, 20                    ; Move to quantity (after name)
+    LEA     DX, [SI]                  ; Load address of item quantity
+    CALL    PRINT                      ; Print item quantity
+    ; Print Item Unit Price
+    ADD     SI, 4                     ; Move to unit price (after quantity)
+    LEA     DX, [SI]                  ; Load address of unit price
+    CALL    PRINT                      ; Print item unit price
+    
+    ; Move back to next item
+    ADD     SI, 6                     ; Move to the next item's name
+    LOOP    VIEW_LOOP                  ; Repeat for all items
 
     LEA    DX, STOCK_REPORT_FOOTER
     CALL    PRINT
@@ -628,14 +680,6 @@ CLEAR_PROMPT PROC NEAR
 CLEAR_PROMPT ENDP
 
 ;==========================================================================================================
-; Procedure to get user input (single character)
-GET_INPUT PROC NEAR
-    MOV     AH, 01H                      ; function 01H: Read single character from stdin
-    INT     21H                          ; store input in AL
-    RET
-GET_INPUT ENDP
-
-;==========================================================================================================
 ; Procedure to get String input
 GET_STRING_INPUT PROC NEAR
     GET_STRING_INPUT_LOOP:
@@ -653,81 +697,39 @@ GET_STRING_INPUT PROC NEAR
     RET
 GET_STRING_INPUT ENDP
 ;==========================================================================================================
-; Procedure to get a string from user input (up to 20 characters)
-GET_STRING PROC NEAR
-    MOV     CX, 20                       ; max length
-    MOV     DI, BX                       ; DI points to the destination (string)
-    
-GET_STRING_LOOP:
-    CALL    GET_INPUT                    ; Get a single character
-    CMP     AL, 0DH                      ; Check if Enter key (carriage return) is pressed
-    JE      END_GET_STRING               ; If yes, end the input loop
-
-    STOSB                                 ; Store character in DB_TEMP or password storage
-    LOOP    GET_STRING_LOOP              ; Loop until the max length is reached
-
-END_GET_STRING:
-    MOV     BYTE PTR [DI], 0             ; Null terminate the string
+; get sigle character user input
+GET_CHAR_INPUT PROC NEAR
+    MOV     AH, 01H                      ; function 01H: Read single character from stdin
+    INT     21H                          ; store input in AL
     RET
-GET_STRING ENDP
+GET_CHAR_INPUT ENDP
 
 ;==========================================================================================================
-; Procedure to get an alphabetic string from user input (up to 20 characters)
-GET_ALPHA_STRING PROC NEAR
-    MOV     CX, 20                       ; max length
-    MOV     DI, BX                       ; DI points to the destination (string)
-    
-GET_ALPHA_LOOP:
-    CALL    GET_INPUT                    ; Get a single character
-    CMP     AL, 0DH                      ; Check if Enter key (carriage return) is pressed
-    JE      END_GET_ALPHA                ; If yes, end the input loop
-
-    ; Check if the input is an alphabetic character (A-Z, a-z)
-    CMP     AL, 'A'                      ; Compare with 'A'
-    JL      GET_ALPHA_LOOP               ; If less than 'A', ignore input
-    CMP     AL, 'Z'                      ; Compare with 'Z'
-    JG      CHECK_LOWERCASE              ; If greater than 'Z', check lowercase
-
-    ; Store uppercase letter
-    STOSB
-    DEC     CX                           ; Decrease length counter
-    JMP     CHECK_LENGTH                 ; Check if length exceeded
-
-CHECK_LOWERCASE:
-    CMP     AL, 'a'                      ; Compare with 'a'
-    JL      GET_ALPHA_LOOP               ; If less than 'a', ignore input
-    CMP     AL, 'z'                      ; Compare with 'z'
-    JG      GET_ALPHA_LOOP               ; If greater than 'z', ignore input
-
-    ; Store lowercase letter
-    STOSB
-    DEC     CX                           ; Decrease length counter
-
-CHECK_LENGTH:
-    CMP     CX, 0                        ; Check if max length is reached
-    JZ      END_GET_ALPHA                ; End if max length reached
-    JMP     GET_ALPHA_LOOP               ; Loop until done
-
-END_GET_ALPHA:
-    MOV     BYTE PTR [DI], 0             ; Null-terminate the string
+PRINT_NEW_LINE PROC NEAR
+    MOV     AH, 09H
+    LEA     DX, NEWLINE
+    INT     21H
     RET
-GET_ALPHA_STRING ENDP
+PRINT_NEW_LINE ENDP
 
 ;==========================================================================================================
 ; Procedure to print string (assumes DX holds address of string)
 PRINT PROC NEAR
-    MOV     AH, 09H                ; Function 09H: Print string to stdout
+    MOV     AH, 09H                      ; function 09H: Print string to stdout
     INT     21H
     RET
 PRINT ENDP
 
 ;==========================================================================================================
-; Procedure to print a character stored in AL
-PRINT_CHAR PROC NEAR
-    MOV     AH, 02H              ; Function 02H: Display character
-    INT     21H                  ; Call DOS interrupt
+; Procedure to print string (assumes DX holds address of string)
+PRINTLN PROC NEAR
+    MOV     AH, 09H                      ; function 09H: Print string to stdout
+    INT     21H
+    LEA     DX, NEWLINE
+    INT     21H
     RET
-PRINT_CHAR ENDP
+PRINTLN ENDP
+
 ;==========================================================================================================
 ; Clear screen
 CLS PROC NEAR
@@ -745,7 +747,12 @@ CLS PROC NEAR
     RET
 CLS ENDP
 
-;==========================================================================================================
-; Write to file (Function 40h)
+CLEAR_BUFFER PROC NEAR
+    LEA DI, DB_TEMP_NAME  ; Assuming DB_TEMP_NAME is the buffer
+    MOV CX, 20             ; Length of the buffer
+    XOR AX, AX             ; Clear AX to 0
+    REP STOSB              ; Fill the buffer with 0s
+    RET
+CLEAR_BUFFER ENDP
 
 END MAIN
