@@ -188,6 +188,12 @@ ITEM_PROMPT1:
     ; CMP     AL, 1
     ; JE      ADD_ITEM_EXIT
 
+    LEA     DX, PASSWORD_PROMPT
+    CALL    PRINT
+    MOV     CX, 20
+    LEA     DI, STAFF_PASSWORD_INPUT
+    CALL    GET_STRING_INPUT
+
     ; TODO: ADD CONTAIN STRING VALUE INTO AN ARRAY OR TXT FILE
     ; TODO: MAYBE CHECK IF NAME ALR TAKEN? OR IF ITS A VALID NAME
 ;------
@@ -548,6 +554,23 @@ GET_INPUT PROC NEAR
     RET
 GET_INPUT ENDP
 
+;==========================================================================================================
+; Procedure to get String input
+GET_STRING_INPUT PROC NEAR
+    GET_STRING_INPUT_LOOP:
+    MOV AH, 01H                      ; Function to read character from standard input
+    INT 21H                          ; Call DOS interrupt
+    CMP AL, 0Dh                      ; Check if Enter key is pressed (Carriage Return)
+    JE GET_STRING_INPUT_DONE_INPUT                    ; If Enter key, jump to done input
+    MOV [DI], AL                     ; Store the character in STAFF_ID
+    INC DI                           ; Move to the next position in STAFF_ID
+    LOOP GET_STRING_INPUT_LOOP       ; Repeat until CX is 0
+
+    GET_STRING_INPUT_DONE_INPUT:
+    MOV BYTE PTR [DI], '$'   ; Set end of string
+
+    RET
+GET_STRING_INPUT ENDP
 ;==========================================================================================================
 ; Procedure to get a string from user input (up to 20 characters)
 GET_STRING PROC NEAR

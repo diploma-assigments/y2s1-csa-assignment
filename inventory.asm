@@ -146,8 +146,6 @@ EXIT_PROGRAM PROC NEAR
     INT     21H
 EXIT_PROGRAM ENDP
 
-<<<<<<< HEAD
-=======
 MAIN ENDP
 
 ;==========================================================================================================
@@ -168,7 +166,6 @@ GET_STRING_INPUT PROC NEAR
 
     RET
 GET_STRING_INPUT ENDP
->>>>>>> b2e08446cbccd6509e16a4695a6fca57566086a0
 ;==========================================================================================================
 ; Procedure to get user input (single character)
 GET_INPUT PROC NEAR
