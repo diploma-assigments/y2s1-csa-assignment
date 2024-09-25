@@ -23,6 +23,8 @@ TITLE ITEM MENU
 	
 	ITEM_ARRAY DB x * y DUP(?) ; Allocate space for the 2D array
 
+    ARRAY db 20,?,8 dup ("$")
+
     CRLF                    EQU     0DH, 0AH
     ZERO                    DB     "0", '$'
 	LONGLINE				DB  	"---------------------------------------------", CRLF, "$"
@@ -36,21 +38,34 @@ TITLE ITEM MENU
     NO_COMMA_FOUND_MSG      DB      "No comma found in UNIT_PRICE.", '$'
 
     ; ITEM_MENU OPTIONS
+    ITEM_MENU_LOGO          DB      "---------------------------------------------",CRLF
+                            DB      "|                ITEM MENU                  |",CRLF
+                            DB      "---------------------------------------------",CRLF, '$'
     ITEMMENU_OPTIONS		DB  	"1 - Add Item", CRLF, "2 - Modify item", CRLF, "3 - Delete item", CRLF, "0 - Exit", CRLF, "$"
 
     ; ADD ITEM
+    ADD_ITEM_LOGO           DB      "---------------------------------------------",CRLF
+                            DB      "|              ADD ITEM MENU                |",CRLF
+                            DB      "---------------------------------------------",CRLF, '$'
+
     ITEM_NAME_PROMPT        DB      CRLF,"Enter ITEM Name      : $"
     ITEM_UNITPRICE_PROMPT   DB      CRLF,"Enter ITEM Unit Price: $"
     ITEM_QUANTITY_PROMPT    DB      CRLF,"Enter ITEM Quantity  : $"
 
     ; MODIFY MENU
+    MODIFY_ITEM_LOGO        DB      "---------------------------------------------",CRLF
+                            DB      "|             MODIFY ITEM MENU              |",CRLF
+                            DB      "---------------------------------------------",CRLF, '$'
 	ITEMMODIFY_OPTIONS		DB  	"1 - Modify Name", CRLF,"2 - Modify Quantity", CRLF,"3 - Modify UnitPrice", CRLF, "0 - Exit", CRLF, "$"
 
     ; STOCK_REPORT
-	STOCK_REPORT_HEADER     DB      "---------------------------------------------", CRLF
-                        	DB      "| ITEM ID | Name        | Count | UnitPrice |", CRLF, "$"
-	STOCK_EACH				DB		"|         |             |       |           |", CRLF, "$"					;9, 13, 6, 11
-
+	STOCK_REPORT_HEADER     DB      "-------------------------------------------------------", CRLF
+                        	DB      "| ITEM ID | Name        | Count | UnitPrice |  Worth  |", CRLF
+                            DB      "-------------------------------------------------------", CRLF, '$'
+	STOCK_EACH				DB		"|         |             |       |           |         |", CRLF, '$'		;9, 13, 6, 11,7
+                            DB      "-------------------------------------------------------", CRLF
+    STOCK_REPORT_FOOTER		DB		"|                        Total Stock Worth: |         |", CRLF
+                            DB      "-------------------------------------------------------", CRLF, '$'          ;42, 7
 .CODE
 
 MAIN PROC FAR
@@ -92,7 +107,7 @@ MAIN ENDP
 ITEM_MENU PROC NEAR
 ITEM_MENU_START:
     CALL    CLS
-    LEA     DX, LONGLINE
+    LEA     DX, ITEM_MENU_LOGO
     CALL    PRINT
     LEA     DX, ITEMMENU_OPTIONS
     CALL    PRINT
@@ -129,6 +144,8 @@ ITEM_MENU ENDP
 ADD_ITEM_MENU PROC NEAR
 ADD_ITEM_MENU_START:
     CALL    CLS
+    LEA     DX, MODIFY_ITEM_LOGO
+    CALL    PRINT
 ITEM_PROMPT1:
     ; READ A STRING
     LEA     DX, ITEM_NAME_PROMPT
@@ -139,28 +156,40 @@ ITEM_PROMPT1:
     CALL    PRINT
 
     ; SI,DI for copy, and twice, then compare?
-    LEA     SI, STRING_BUFFER
-    LEA     DI, CONTAIN_STRING
-    CALL    COPY_STRING
-    LEA     SI, ZERO
-    LEA     DI, CONTAIN_STRING2
-    LEA     DX, CONTAIN_STRING
-    CALL    PRINT
-    LEA     DX, CONTAIN_STRING2
-    CALL    PRINT
-    CALL    COMPARE_STRINGS
-    CMP     AL, 1
-    JE      ADD_ITEM_EXIT
+    ; LEA     SI, STRING_BUFFER
+    ; LEA     DI, CONTAIN_STRING
+    ; CALL    COPY_STRING
+    ; LEA     SI, ZERO
+    ; LEA     DI, CONTAIN_STRING2
+    ; LEA     DX, CONTAIN_STRING
+    ; CALL    PRINT
+    ; LEA     DX, CONTAIN_STRING2
+    ; CALL    PRINT
+    ; CALL    COMPARE_STRINGS
+    ; CMP     AL, 1
+    ; JE      ADD_ITEM_EXIT
 
     ; TODO: ADD CONTAIN STRING VALUE INTO AN ARRAY OR TXT FILE
     ; TODO: MAYBE CHECK IF NAME ALR TAKEN? OR IF ITS A VALID NAME
 ;------
-    CALL    CLEAR_PROMPT
+    ; CALL    CLEAR_PROMPT
 
-    JMP     ITEM_PROMPT1
+    ; JMP     ITEM_PROMPT1
 ITEM_PROMPT2:
+    LEA     DX, ITEM_QUANTITY_PROMPT
+    CALL    PRINT
+    MOV     BX, OFFSET STRING_BUFFER
+    CALL    GET_STRING
+    LEA     DX, STRING_BUFFER
+    CALL    PRINT
 
 ITEM_PROMPT3:
+    LEA     DX, ITEM_UNITPRICE_PROMPT
+    CALL    PRINT
+    MOV     BX, OFFSET STRING_BUFFER
+    CALL    GET_STRING
+    LEA     DX, STRING_BUFFER
+    CALL    PRINT
 
 ADD_ITEM_EXIT:
     RET
@@ -170,7 +199,7 @@ ADD_ITEM_MENU ENDP
 MODIFY_ITEM_MENU PROC NEAR
 MODIFY_ITEM_MENU_START:
     CALL    CLS
-    LEA     DX, LONGLINE
+    LEA     DX, MODIFY_ITEM_LOGO
     CALL    PRINT
     LEA     DX, ITEMMODIFY_OPTIONS
     CALL    PRINT
@@ -178,8 +207,39 @@ MODIFY_ITEM_MENU_START:
     CALL    PRINT
     CALL    GET_INPUT
     MOV     SELECTED_OPTION, AL
+    CMP     SELECTED_OPTION, 30H
+    JE      MODIFY_EXIT
+    CMP     SELECTED_OPTION, 31H
+    JE      MODIFY_NAME
+    CMP     SELECTED_OPTION, 32H
+    JE      MODIFY_QUANTITY
+    CMP     SELECTED_OPTION, 33H
+    JE      MODIFY_UNITPRICE
 
-
+MODIFY_NAME:
+    LEA     DX, ITEM_NAME_PROMPT
+    CALL    PRINT
+    MOV     BX, OFFSET STRING_BUFFER
+    CALL    GET_STRING
+    LEA     DX, STRING_BUFFER
+    CALL    PRINT
+    RET
+MODIFY_QUANTITY:
+    LEA     DX, ITEM_QUANTITY_PROMPT
+    CALL    PRINT
+    MOV     BX, OFFSET STRING_BUFFER
+    CALL    GET_STRING
+    LEA     DX, STRING_BUFFER
+    CALL    PRINT
+    RET
+MODIFY_UNITPRICE:
+    LEA     DX, ITEM_UNITPRICE_PROMPT
+    CALL    PRINT
+    MOV     BX, OFFSET STRING_BUFFER
+    CALL    GET_STRING
+    LEA     DX, STRING_BUFFER
+    CALL    PRINT
+MODIFY_EXIT:
     RET
 MODIFY_ITEM_MENU ENDP
 
@@ -474,7 +534,7 @@ HANDLE_BACKSPACE:
     JMP     GET_STRING_LOOP              ; loop back to get the next character
 
 END_GET_STRING:
-    MOV     BYTE PTR [DI], 0             ; Null terminate the string
+    MOV     BYTE PTR [DI], '$'             ; Null terminate the string
     RET
 GET_STRING ENDP
 
