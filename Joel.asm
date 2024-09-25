@@ -4,8 +4,11 @@ TITLE ITEM MENU
 .STACK 64                    ; Declare stack segment
 .DATA
 
-    DB_TEMP				DB      ?         ; Temporary data (could be for username/password)
     DW_TEMP				DW      ?
+
+    DB_TEMP_NAME             DB      20 DUP(0) ; Temporary data for username/password (20 bytes max)
+    DB_TEMP_QUANTITY         DB      4 DUP(0) ; Separate storage for password
+    DB_TEMP_UNITPRICE        DB      8 DUP(0)
 
     WHOLE_NUM           DW      12345
     TEN_THOUSAND        DW      10000
@@ -87,24 +90,24 @@ MAIN PROC FAR
     ; LEA     DX, UNIT_PRICE
     ; CALL    PRINT
 ; MAIN_START:
-    ; CALL    ITEM_MENU
-;     CALL    CLS
-;     LEA     SI,TESTSTR1
-;     LEA     DI,CONTAIN_STRING
-;     CALL    COPY_STRING
-;     LEA     SI,TESTSTR2
-;     LEA     DI,CONTAIN_STRING2
-;     CALL    COPY_STRING
-;     MOV     AL,0
-;     LEA     DX, CONTAIN_STRING
-;     CALL    PRINT
+    CALL    ITEM_MENU
+    ; CALL    CLS
+    ; LEA     SI,TESTSTR1
+    ; LEA     DI,CONTAIN_STRING
+    ; CALL    COPY_STRING
+    ; LEA     SI,TESTSTR2
+    ; LEA     DI,CONTAIN_STRING2
+    ; CALL    COPY_STRING
+    ; MOV     AL,0
+    ; LEA     DX, CONTAIN_STRING
+    ; CALL    PRINT
 
-;     LEA     DX, CONTAIN_STRING2
-;     CALL    PRINT
+    ; LEA     DX, CONTAIN_STRING2
+    ; CALL    PRINT
 
-;     CALL    COMPARE_STRINGS
-;     CMP     AL,0
-;     JE      MAIN_START
+    ; CALL    COMPARE_STRINGS
+    ; CMP     AL,0
+    ; JE      MAIN_START
 
     MOV     BX, OFFSET CONTAIN_STRING ; Pass the address of the storage
     CALL    GET_STRING                 ; Call the GET_STRING procedure
@@ -164,10 +167,12 @@ ITEM_PROMPT1:
     ; READ A STRING
     LEA     DX, ITEM_NAME_PROMPT
     CALL    PRINT
-    MOV     BX, OFFSET STRING_BUFFER
+    MOV     BX, OFFSET DB_TEMP_NAME
     CALL    GET_STRING
-    LEA     DX, STRING_BUFFER
+    LEA     DX, DB_TEMP_NAME
     CALL    PRINT
+
+
 
     ; SI,DI for copy, and twice, then compare?
     ; LEA     SI, STRING_BUFFER
@@ -546,49 +551,63 @@ GET_INPUT ENDP
 ;==========================================================================================================
 ; Procedure to get a string from user input (up to 20 characters)
 GET_STRING PROC NEAR
-    MOV     CX, 20                     ; Max length
-    MOV     DI, BX                      ; DI points to the destination (string)
-    MOV     SI, 0                       ; Initialize a counter for the string length
-
+    MOV     CX, 20                       ; max length
+    MOV     DI, BX                       ; DI points to the destination (string)
+    
 GET_STRING_LOOP:
-    CALL    GET_INPUT                   ; Get a single character
-    CMP     AL, 08H                     ; Check if Backspace key is pressed
-    JE      HANDLE_BACKSPACE            ; If yes, handle backspace
+    CALL    GET_INPUT                    ; Get a single character
+    CMP     AL, 0DH                      ; Check if Enter key (carriage return) is pressed
+    JE      END_GET_STRING               ; If yes, end the input loop
 
-    CMP     AL, 0DH                     ; Check if Enter key (carriage return) is pressed
-    JE      END_GET_STRING              ; If yes, end the input loop
-
-    ; Store character if within max length
-    CMP     SI, 20                      ; Compare length counter with max length
-    JAE     END_GET_STRING              ; If SI >= 20, jump to end
-
-    STOSB                                ; Store character in the destination
-    INC     SI                           ; Increment the string length counter
-    JMP     GET_STRING_LOOP              ; Loop until the max length is reached
-
-HANDLE_BACKSPACE:
-    CMP     SI, 0                       ; Check if the string is empty
-    JE      GET_STRING_LOOP             ; If yes, do nothing
-
-    DEC     SI                           ; Decrement the string length counter
-    MOV     AL, 20H                     ; ASCII code for space
-    STOSB                                ; Overwrite the previous character with a space
-    MOV     AL, 08H                     ; ASCII code for backspace
-    CALL    PRINT_CHAR                   ; Print the backspace character
-    JMP     GET_STRING_LOOP              ; Loop back to get the next character
+    STOSB                                 ; Store character in DB_TEMP or password storage
+    LOOP    GET_STRING_LOOP              ; Loop until the max length is reached
 
 END_GET_STRING:
-    ; Add the '$' terminator only if something was entered
-    CMP     SI, 0                       ; Check if anything was entered
-    JE      NO_INPUT                    ; If no input, skip adding '$'
-
-    MOV     BYTE PTR [DI], '$'          ; Null terminate the string
-    RET
-
-NO_INPUT:
-    MOV     BYTE PTR [DI], '$'          ; Ensure a terminator even if no input was entered
+    MOV     BYTE PTR [DI], 0             ; Null terminate the string
     RET
 GET_STRING ENDP
+
+;==========================================================================================================
+; Procedure to get an alphabetic string from user input (up to 20 characters)
+GET_ALPHA_STRING PROC NEAR
+    MOV     CX, 20                       ; max length
+    MOV     DI, BX                       ; DI points to the destination (string)
+    
+GET_ALPHA_LOOP:
+    CALL    GET_INPUT                    ; Get a single character
+    CMP     AL, 0DH                      ; Check if Enter key (carriage return) is pressed
+    JE      END_GET_ALPHA                ; If yes, end the input loop
+
+    ; Check if the input is an alphabetic character (A-Z, a-z)
+    CMP     AL, 'A'                      ; Compare with 'A'
+    JL      GET_ALPHA_LOOP               ; If less than 'A', ignore input
+    CMP     AL, 'Z'                      ; Compare with 'Z'
+    JG      CHECK_LOWERCASE              ; If greater than 'Z', check lowercase
+
+    ; Store uppercase letter
+    STOSB
+    DEC     CX                           ; Decrease length counter
+    JMP     CHECK_LENGTH                 ; Check if length exceeded
+
+CHECK_LOWERCASE:
+    CMP     AL, 'a'                      ; Compare with 'a'
+    JL      GET_ALPHA_LOOP               ; If less than 'a', ignore input
+    CMP     AL, 'z'                      ; Compare with 'z'
+    JG      GET_ALPHA_LOOP               ; If greater than 'z', ignore input
+
+    ; Store lowercase letter
+    STOSB
+    DEC     CX                           ; Decrease length counter
+
+CHECK_LENGTH:
+    CMP     CX, 0                        ; Check if max length is reached
+    JZ      END_GET_ALPHA                ; End if max length reached
+    JMP     GET_ALPHA_LOOP               ; Loop until done
+
+END_GET_ALPHA:
+    MOV     BYTE PTR [DI], 0             ; Null-terminate the string
+    RET
+GET_ALPHA_STRING ENDP
 
 ;==========================================================================================================
 ; Procedure to print string (assumes DX holds address of string)

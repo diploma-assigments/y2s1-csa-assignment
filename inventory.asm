@@ -138,15 +138,15 @@ MAIN ENDP
 
 ;==========================================================================================================
 GET_STAFF_ID PROC NEAR
-    MOV     CX, 7
+    ; MOV     CX, 7
 
-    GET_STAFF_ID_LOOP:
-    MOV     AH, 01H
-    INT     21H
-    // STORE INTO STAFF_ID[I]
+    ; GET_STAFF_ID_LOOP:
+    ; MOV     AH, 01H
+    ; INT     21H
+    ; // STORE INTO STAFF_ID[I]
 
-    LOOP    GET_STAFF_ID_LOOP
-    // SET STAFF_ID[8] AS $
+    ; LOOP    GET_STAFF_ID_LOOP
+    ; // SET STAFF_ID[8] AS $
 
 
 GET_STAFF_ID ENDP
