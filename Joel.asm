@@ -19,6 +19,8 @@ TITLE ITEM MENU
     UNIT_PRICE              DB      "123456", '$'  ; String to check for comma
     CONTAIN_STRING          DB      21 DUP('$')
     CONTAIN_STRING2         DB      21 DUP('$')
+    COMPARE_STRING1          DB      21 DUP('$')
+    CONPARE_STRING2         DB      21 DUP('$')
     STRING_BUFFER DB 21 DUP(0) ; Allocate space for the string (20 chars + 1 for null terminator)
 
 	x EQU 4 ; No. of Attributes in Item
@@ -91,29 +93,12 @@ MAIN PROC FAR
     ; CALL    PRINT
 ; MAIN_START:
     CALL    ITEM_MENU
-    ; CALL    CLS
-    ; LEA     SI,TESTSTR1
-    ; LEA     DI,CONTAIN_STRING
-    ; CALL    COPY_STRING
-    ; LEA     SI,TESTSTR2
-    ; LEA     DI,CONTAIN_STRING2
-    ; CALL    COPY_STRING
-    ; MOV     AL,0
-    ; LEA     DX, CONTAIN_STRING
-    ; CALL    PRINT
 
-    ; LEA     DX, CONTAIN_STRING2
-    ; CALL    PRINT
-
-    ; CALL    COMPARE_STRINGS
-    ; CMP     AL,0
-    ; JE      MAIN_START
-
-    MOV     BX, OFFSET CONTAIN_STRING ; Pass the address of the storage
+    MOV     BX, OFFSET CONTAIN_STRING1 ; Pass the address of the storage
     CALL    GET_STRING                 ; Call the GET_STRING procedure
 
     ; Optional: Print the entered string
-    MOV     DX, OFFSET CONTAIN_STRING  ; Load address of the string
+    MOV     DX, OFFSET CONTAIN_STRING1  ; Load address of the string
     CALL    PRINT                       ; Print the string
 
     ; Exit the program
@@ -172,30 +157,12 @@ ITEM_PROMPT1:
     LEA     DX, DB_TEMP_NAME
     CALL    PRINT
 
-
-
-    ; SI,DI for copy, and twice, then compare?
-    ; LEA     SI, STRING_BUFFER
-    ; LEA     DI, CONTAIN_STRING
-    ; CALL    COPY_STRING
-    ; LEA     SI, ZERO
-    ; LEA     DI, CONTAIN_STRING2
-    ; LEA     DX, CONTAIN_STRING
-    ; CALL    PRINT
-    ; LEA     DX, CONTAIN_STRING2
-    ; CALL    PRINT
-    ; CALL    COMPARE_STRINGS
-    ; CMP     AL, 1
-    ; JE      ADD_ITEM_EXIT
-
-    LEA     DX, PASSWORD_PROMPT
+    LEA     DX, ITEM_NAME_PROMPT
     CALL    PRINT
     MOV     CX, 20
     LEA     DI, STAFF_PASSWORD_INPUT
     CALL    GET_STRING_INPUT
 
-    ; TODO: ADD CONTAIN STRING VALUE INTO AN ARRAY OR TXT FILE
-    ; TODO: MAYBE CHECK IF NAME ALR TAKEN? OR IF ITS A VALID NAME
 ;------
     ; CALL    CLEAR_PROMPT
 
@@ -329,7 +296,7 @@ IS_DIGITS PROC NEAR
     ; Parameters:
     ;   SI = Address of the string (CONTAIN_STRING)
     
-    MOV     SI, OFFSET CONTAIN_STRING ; Load address of the string
+    MOV     SI, OFFSET CONTAIN_STRING1 ; Load address of the string
 
     MOV     AL, 0                  ; Assume no digits found (AL = 0)
     
@@ -410,7 +377,7 @@ AFTER_MANTISSA:
 
     ; Using my Contains function
     LEA     SI, UNIT_PRICE         ; Source string address
-    LEA     DI, CONTAIN_STRING     ; Destination string address
+    LEA     DI, CONTAIN_STRING1     ; Destination string address
     CALL    COPY_STRING            ; General string copy
 
     MOV     CL, ','
@@ -429,7 +396,7 @@ CONTAINS PROC
     MOV     SI, 0                  ; Start index at 0
 
 CHECK_CONTAIN_LOOP:
-    MOV     AL, CONTAIN_STRING[SI] ; Load current character from string
+    MOV     AL, CONTAIN_STRING1[SI] ; Load current character from string
     CMP     AL, CL                 ; Compare with character to find
     JE      FOUND                  ; Jump if equal (found character)
     CMP     AL, '$'                ; Check for string terminator
@@ -456,7 +423,7 @@ StrLen PROC
     XOR     CX, CX                  ; Clear CX, will use it for iteration
 
 CountLoop:
-    MOV     AL, CONTAIN_STRING[SI]  ; DX + CX = Base Adress Location and the Index
+    MOV     AL, CONTAIN_STRING1[SI]  ; DX + CX = Base Adress Location and the Index
     CMP     AL, '$'                 ; Check for the null terminator
     JE      Done                    ; If null terminator, we are done
     INC     CX                      ; Increment the count
@@ -475,7 +442,7 @@ INDEX_OF PROC
     MOV     CX, 0                  ; Initialize CX for the index
 
 FIND_LOOP:
-    MOV     AL, CONTAIN_STRING[SI] ; Load current character from string
+    MOV     AL, CONTAIN_STRING1[SI] ; Load current character from string
     CMP     AL, CL                 ; Compare with character to find
     JE      FOUND_OCCURENCE        ; Jump if equal (found character)
 
@@ -505,27 +472,27 @@ INDEX_OF ENDP
 COMPARE_STRINGS PROC NEAR
     MOV     SI, 0                      ; Reset index for comparison
 
-COMPARE_LOOP:
-    MOV     AL, CONTAIN_STRING[SI]     ; Load current character from first string
-    MOV     BL, CONTAIN_STRING2[SI]     ; Load current character from second string
+COMPARE_STRINGS_LOOP:
+    MOV     AL, COMPARE_STRING1[SI]     ; Load current character from first string
+    MOV     BL, COMPARE_STRING2[SI]     ; Load current character from second string
 
     CMP     AL, BL                      ; Compare characters
-    JNE     STRINGS_NOT_EQUAL           ; Jump if not equal
+    JNE     COMPARE_STRINGS_NOT_EQUAL   ; Jump if not equal
 
     CMP     AL, '$'                     ; Check if end of first string
-    JE      STRINGS_EQUAL               ; Jump if equal (both strings ended)
+    JE      COMPARE_STRINGS_EQUAL       ; Jump if equal (both strings ended)
 
     CMP     BL, '$'                     ; Check if end of second string
-    JE      STRINGS_NOT_EQUAL           ; Jump if one string ended
+    JE      COMPARE_STRINGS_NOT_EQUAL   ; Jump if one string ended
 
     INC     SI                          ; Increment index
-    JMP     COMPARE_LOOP                ; Repeat loop
+    JMP     COMPARE_STRINGS_LOOP        ; Repeat loop
 
-STRINGS_NOT_EQUAL:
+COMPARE_STRINGS_NOT_EQUAL:
     MOV     AL, 0                       ; Set AL to 0 for not equal
     RET
 
-STRINGS_EQUAL:
+COMPARE_STRINGS_EQUAL:
     MOV     AL, 1                       ; Set AL to 1 for equal
     RET
 COMPARE_STRINGS ENDP
