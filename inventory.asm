@@ -4,6 +4,9 @@
     DB_TEMP                 DB      20 DUP(0) ; Temporary data for username/password (20 bytes max)
     DB_TEMP_PASSWORD        DB      20 DUP(0) ; Separate storage for password
     DW_TEMP				    DW      ?
+    COMPARE_STRING1         DB      21 DUP(0)
+    COMPARE_STRING2         DB      21 DUP(0)
+
     CRLF                    EQU     0DH, 0AH 
     NEWLINE                 DB      0DH, 0AH, "$"
 
@@ -14,8 +17,8 @@
     
     ; Data stores
     STAFF_SLOT_1_EMPTY      DB      0
-    STAFF_SLOT_1_ID         DB      8 DUP(0)
-    STAFF_SLOT_1_PASSWORD   DB      21 DUP(0)
+    STAFF_SLOT_1_ID         DB      "STF0001$"
+    STAFF_SLOT_1_PASSWORD   DB      "pass@123$"
     
     STAFF_SLOT_2_EMPTY      DB      1
     STAFF_SLOT_2_ID         DB      8 DUP(0)
@@ -31,12 +34,14 @@
     
     ; Messages
     MAINMENU_OPTION_MSG     DB      "1 - Staff Log In", CRLF, "2 - Staff Sign Up", CRLF, "0 - Exit", CRLF, "$"
-    PROMPT_MSG              DB      CRLF, "Select an option: $"
+    OPTION_PROMPT           DB      CRLF, "Select an option: $"
     INVALID_OPTION_MSG      DB      CRLF, "Invalid option. Try again.", CRLF, "$"
-    LOGIN_MSG               DB      CRLF, "Staff Log In:", CRLF, "$"
-    SIGNUP_MSG              DB      CRLF, "Staff Sign Up:", CRLF, "$"
+    LOGIN_HEADER            DB      CRLF, "Staff Log In:", CRLF, "$"
+    SIGNUP_HEADER           DB      CRLF, "Staff Sign Up:", CRLF, "$"
+    LOGIN_SUCCESS_MSG       DB      CRLF, "Login successful!", "$"
+    LOGIN_FAILED_MSG        DB      CRLF, "Invalid credentials, please try again.$"
+    SIGNUP_SUCCESS_MSG      DB      CRLF, "Signup successful! Welcome, ", "$"
     PROGRAM_EXIT_MSG        DB      CRLF, "Thank you for using the inventory system.$"
-    SIGNUP_SUCCESS          DB      CRLF, "Signup successful! Welcome, ", "$"
     USERNAME_PROMPT         DB      CRLF, "Enter username: $"
     PASSWORD_PROMPT         DB      CRLF, "Enter password: $"
     
@@ -71,17 +76,24 @@ MAIN PROC FAR
     LEA     DX, MAINMENU_OPTION_MSG        ; print main menu options
     CALL    PRINT
 
-    LEA     DX, PROMPT_MSG              
+    LEA     DX, OPTION_PROMPT              
     CALL    PRINT                       ; get char option
     CALL    GET_CHAR_INPUT            
     MOV     OPTION_INPUT, AL          
 
     CMP     OPTION_INPUT, '1'        
-    JE      STAFF_LOGIN                  
+    JE      CALL_STAFF_LOGIN                 
     CMP     OPTION_INPUT, '2'        ; jump to relavent menu
-    JE      STAFF_SIGNUP                 
+    JE      CALL_STAFF_SIGNUP                 
     CMP     OPTION_INPUT, '0'        
-    JE      EXIT_PROGRAM                
+    JE      CALL_EXIT_PROGRAM                
+
+    CALL_STAFF_LOGIN:
+    CALL STAFF_LOGIN
+    CALL_STAFF_SIGNUP:
+    ;CALL STAFF_SIGNUP
+    CALL_EXIT_PROGRAM:
+    CALL EXIT_PROGRAM
 
     ; Invalid option
     LEA     DX, INVALID_OPTION_MSG       
@@ -89,11 +101,11 @@ MAIN PROC FAR
     JMP     MAIN_LOOP                 
     
 ;==========================================================================================================
-    STAFF_LOGIN:
+STAFF_LOGIN PROC NEAR
     CALL    CLS
 
     ; display menu header
-    LEA     DX, LOGIN_MSG
+    LEA     DX, LOGIN_HEADER
     CALL    PRINT               
 
     ; Get username
@@ -110,74 +122,132 @@ MAIN PROC FAR
     LEA     DI, STAFF_PASSWORD_INPUT
     CALL    GET_STRING_INPUT
 
-    ; check if staff id is valid
-    CMP     STAFF_SLOT_1_ID, STAFF_ID_INPUT
-    JE      STAFF_LOGIN_ID_VALID
-    CMP     STAFF_SLOT_2_ID, STAFF_ID_INPUT
-    JE      STAFF_LOGIN_ID_VALID
-    CMP     STAFF_SLOT_3_ID, STAFF_ID_INPUT
-    JE      STAFF_LOGIN_ID_VALID
-    CMP     STAFF_SLOT_4_ID, STAFF_ID_INPUT
-    JE      STAFF_LOGIN_ID_VALID
-    JMP     STAFF_LOGIN_ERROR
+    ; Check if staff id is valid
+    LEA     SI, STAFF_ID_INPUT
+    LEA     DI, COMPARE_STRING1     ; set compare string 1 = staff_id_input
+    CALL    COPY_STRING
 
-    ; check if staff password is valid
-    STAFF_LOGIN_ID_VALID:
-    CMP     STAFF_SLOT_1_PASSWORD, STAFF_PASSWORD_INPUT
-    JE      STAFF_LOGIN_ID_VALID
-    CMP     STAFF_SLOT_2_PASSWORD, STAFF_PASSWORD_INPUT
-    JE      STAFF_LOGIN_ID_VALID
-    CMP     STAFF_SLOT_3_PASSWORD, STAFF_PASSWORD_INPUT
-    JE      STAFF_LOGIN_ID_VALID
-    CMP     STAFF_SLOT_4_PASSWORD, STAFF_PASSWORD_INPUT
-    JE      STAFF_LOGIN_ID_VALID
-    JMP     STAFF_LOGIN_ERROR
+    MOV     CX, 4
+    STAFF_LOGIN_CHECK_ID_LOOP:
+            CMP     CX, 0
+            JE      STAFF_LOGIN_CHECK_ID_1
+            CMP     CX, 1
+            JE      STAFF_LOGIN_CHECK_ID_2
+            CMP     CX, 2
+            JE      STAFF_LOGIN_CHECK_ID_3
+            CMP     CX, 3
+            JE      STAFF_LOGIN_CHECK_ID_4
+            
+            STAFF_LOGIN_CHECK_ID_1:
+            LEA     SI, STAFF_SLOT_1_ID
+            JMP     STAFF_LOGIN_CHECK_ID
+            STAFF_LOGIN_CHECK_ID_2:
+            LEA     SI, STAFF_SLOT_2_ID
+            JMP     STAFF_LOGIN_CHECK_ID
+            STAFF_LOGIN_CHECK_ID_3:
+            LEA     SI, STAFF_SLOT_3_ID
+            JMP     STAFF_LOGIN_CHECK_ID
+            STAFF_LOGIN_CHECK_ID_4:
+            LEA     SI, STAFF_SLOT_4_ID
+            JMP     STAFF_LOGIN_CHECK_ID
 
-    STAFF_LOGIN_PASSWORD_VALID:
-    LEA     DX, "LOGIN SUCESS!$"
+        STAFF_LOGIN_CHECK_ID:
+            LEA     DI, COMPARE_STRING2     ; set compare string 2 = staff slot 1
+            CALL    COPY_STRING
+            CALL    COMPARE_STRINGS
+            CMP     AL, 1                   ; if staff slot 1 id == input
+            JE      STAFF_LOGIN_CHECK_PASSWORD_LOOP
+
+            LOOP    STAFF_LOGIN_CHECK_ID_LOOP
+    JMP     STAFF_LOGIN_CREDENTIALS_INVALID
+
+
+    ; Check if staff password is valid
+    LEA     SI, STAFF_PASSWORD_INPUT
+    LEA     DI, COMPARE_STRING1     ; set compare string 1 = staff_id_input
+    CALL    COPY_STRING
+
+    MOV     CX, 4
+    STAFF_LOGIN_CHECK_PASSWORD_LOOP:
+            CMP     CX, 0
+            JE      STAFF_LOGIN_CHECK_PASSWORD_1
+            CMP     CX, 1
+            JE      STAFF_LOGIN_CHECK_PASSWORD_2
+            CMP     CX, 2
+            JE      STAFF_LOGIN_CHECK_PASSWORD_3
+            CMP     CX, 3
+            JE      STAFF_LOGIN_CHECK_PASSWORD_4
+            
+            STAFF_LOGIN_CHECK_PASSWORD_1:
+            LEA     SI, STAFF_SLOT_1_PASSWORD
+            JMP     STAFF_LOGIN_CHECK_PASSWORD
+            STAFF_LOGIN_CHECK_PASSWORD_2:
+            LEA     SI, STAFF_SLOT_2_PASSWORD
+            JMP     STAFF_LOGIN_CHECK_PASSWORD
+            STAFF_LOGIN_CHECK_PASSWORD_3:
+            LEA     SI, STAFF_SLOT_3_PASSWORD
+            JMP     STAFF_LOGIN_CHECK_PASSWORD
+            STAFF_LOGIN_CHECK_PASSWORD_4:
+            LEA     SI, STAFF_SLOT_4_PASSWORD
+            JMP     STAFF_LOGIN_CHECK_PASSWORD
+
+        STAFF_LOGIN_CHECK_PASSWORD:
+            LEA     DI, COMPARE_STRING2     ; set compare string 2 = staff slot 1
+            CALL    COPY_STRING
+            CALL    COMPARE_STRINGS
+            CMP     AL, 1                   ; if staff slot 1 password == input
+            JE      STAFF_LOGIN_CREDENTIALS_VALID
+
+            LOOP    STAFF_LOGIN_CHECK_PASSWORD_LOOP
+    JMP     STAFF_LOGIN_CREDENTIALS_INVALID
+
+    STAFF_LOGIN_CREDENTIALS_VALID:
+    LEA     DX, LOGIN_SUCCESS_MSG
     CALL    PRINT
     MOV AH, 01h
     INT 21H
     JMP     MAIN_LOOP                    ; Go back to main loop
 
-    JMPSTAFF_LOGIN_ERROR:
-        LEA     DX, "Invalid creds!$"
+    STAFF_LOGIN_CREDENTIALS_INVALID:
+    LEA     DX, LOGIN_FAILED_MSG
     CALL    PRINT
     MOV AH, 01h
     INT 21H
     JMP     MAIN_LOOP                    ; Go back to main loop
+STAFF_LOGIN ENDP
 
 ;==========================================================================================================
-    STAFF_SIGNUP:
-    CALL    CLS
+; STAFF_SIGNUP PROC NEAR
+;     CALL    CLS
 
-    ; Display staff signup message
-    LEA     DX, SIGNUP_MSG
-    CALL    PRINT
+;     ; Display staff signup message
+;     LEA     DX, SIGNUP_HEADER
+;     CALL    PRINT
 
-    ; Get username
-    LEA     DX, USERNAME_PROMPT
-    CALL    PRINT
-    MOV     BX, OFFSET DB_TEMP          ; Address of the username storage
-    CALL    GET_STRING                   ; Read username
+;     ; Get username
+;     LEA     DX, USERNAME_PROMPT
+;     CALL    PRINT
+;     MOV     BX, OFFSET DB_TEMP          ; Address of the username storage
+;     CALL    GET_STRING                   ; Read username
 
-    ; Get password
-    LEA     DX, PASSWORD_PROMPT
-    CALL    PRINT
-    MOV     BX, OFFSET DB_TEMP_PASSWORD  ; Address of the password storage
-    CALL    GET_STRING                   ; Read password
+;     ; Get password
+;     LEA     DX, PASSWORD_PROMPT
+;     CALL    PRINT
+;     MOV     BX, OFFSET DB_TEMP_PASSWORD  ; Address of the password storage
+;     CALL    GET_STRING                   ; Read password
 
-    ; Confirm signup success
-    LEA     DX, SIGNUP_SUCCESS
-    CALL    PRINT
-    
-    ; Print the username to confirm
-    LEA     DX, DB_TEMP                  ; Load address of username
-    CALL    PRINT                        ; Print the username
+;     ; Confirm signup success      DB      CRLF, ""
+;     LEA     DX, SIGNUP_SUCCESS_MSG   CALL    PRINT
 
-    JMP     MAIN_LOOP
+;     ; Print the username to confirm
+;     LEA     DX, DB_TEMP                  ; Load address of username
+;     CALL    PRINT                        ; Print the username
 
-EXIT_PROGRAM:
+;     JMP     MAIN_LOOP
+; STAFF_SIGNUP ENDP
+
+;==========================================================================================================
+EXIT_PROGRAM PROC NEAR
     CALL    CLS
 
     ; Print program exit message
@@ -186,8 +256,64 @@ EXIT_PROGRAM:
 
     MOV     AX, 4C00H                    ; request for program exit
     INT     21H
+EXIT_PROGRAM ENDP
 
 MAIN ENDP
+
+
+;==========================================================================================================
+; Generalized procedure to copy a string from source to destination
+; Parameters: 
+; LEA SI, <from_string>
+; LEA DI, <to_string>
+COPY_STRING PROC
+    PUSH SI                     ; Save SI (source index)
+    PUSH DI                     ; Save DI (destination index)
+
+COPY_LOOP:
+    MOV     AL, [SI]             ; Load current character from source string
+    MOV     [DI], AL             ; Copy it to destination string
+    CMP     AL, '$'              ; Check for the string terminator
+    JE      COPY_DONE            ; Stop copying if end of string is reached
+
+    INC     SI                   ; Increment source index
+    INC     DI                   ; Increment destination index
+    JMP     COPY_LOOP            ; Repeat the loop
+
+COPY_DONE:
+    POP DI                       ; Restore DI
+    POP SI                       ; Restore SI
+    RET
+COPY_STRING ENDP
+
+;==========================================================================================================
+COMPARE_STRINGS PROC NEAR
+    MOV     SI, 0                      ; Reset index for comparison
+
+COMPARE_STRINGS_LOOP:
+    MOV     AL, COMPARE_STRING1[SI]     ; Load current character from first string
+    MOV     BL, COMPARE_STRING2[SI]     ; Load current character from second string
+
+    CMP     AL, BL                      ; Compare characters
+    JNE     COMPARE_STRINGS_NOT_EQUAL   ; Jump if not equal
+
+    CMP     AL, '$'                     ; Check if end of first string
+    JE      COMPARE_STRINGS_EQUAL       ; Jump if equal (both strings ended)
+
+    CMP     BL, '$'                     ; Check if end of second string
+    JE      COMPARE_STRINGS_NOT_EQUAL   ; Jump if one string ended
+
+    INC     SI                          ; Increment index
+    JMP     COMPARE_STRINGS_LOOP        ; Repeat loop
+
+COMPARE_STRINGS_NOT_EQUAL:
+    MOV     AL, 0                       ; Set AL to 0 for not equal
+    RET
+
+COMPARE_STRINGS_EQUAL:
+    MOV     AL, 1                       ; Set AL to 1 for equal
+    RET
+COMPARE_STRINGS ENDP
 
 ;==========================================================================================================
 ; MOV CX, MAXLENGTH
