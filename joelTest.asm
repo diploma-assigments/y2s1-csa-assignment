@@ -659,6 +659,10 @@ STOCK_REPORT_MENU PROC NEAR
  
 STOCK_REPORT_MENU ENDP
 
+TRENDING_REPORT_MENU PROC NEAR
+
+TRENDING_REPORT_MENU ENDP
+
 ;==========================================================================================================
 ; Write to file (Function 40h)
 
