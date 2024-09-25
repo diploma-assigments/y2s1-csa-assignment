@@ -10,6 +10,7 @@ TITLE ITEM MENU
     DB_TEMP_QUANTITY         DB      4 DUP(0) ; Separate storage for password
     DB_TEMP_UNITPRICE        DB      8 DUP(0)
 
+
     WHOLE_NUM           DW      12345
     TEN_THOUSAND        DW      10000
     THOUSAND            DW      1000
@@ -17,10 +18,10 @@ TITLE ITEM MENU
     TEN                 DW      10
 
     UNIT_PRICE              DB      "123456", '$'  ; String to check for comma
-    CONTAIN_STRING          DB      21 DUP('$')
+    CONTAIN_STRING1          DB      21 DUP('$')
     CONTAIN_STRING2         DB      21 DUP('$')
     COMPARE_STRING1          DB      21 DUP('$')
-    CONPARE_STRING2         DB      21 DUP('$')
+    COMPARE_STRING2         DB      21 DUP('$')
     STRING_BUFFER DB 21 DUP(0) ; Allocate space for the string (20 chars + 1 for null terminator)
 
 	x EQU 4 ; No. of Attributes in Item
@@ -146,22 +147,17 @@ ITEM_MENU ENDP
 ADD_ITEM_MENU PROC NEAR
 ADD_ITEM_MENU_START:
     CALL    CLS
-    LEA     DX, MODIFY_ITEM_LOGO
+    LEA     DX, ADD_ITEM_LOGO
     CALL    PRINT
 ITEM_PROMPT1:
     ; READ A STRING
     LEA     DX, ITEM_NAME_PROMPT
     CALL    PRINT
-    MOV     BX, OFFSET DB_TEMP_NAME
-    CALL    GET_STRING
+    MOV     CX, 20
+    LEA     DI, DB_TEMP_NAME
+    CALL    GET_STRING_INPUT
     LEA     DX, DB_TEMP_NAME
     CALL    PRINT
-
-    LEA     DX, ITEM_NAME_PROMPT
-    CALL    PRINT
-    MOV     CX, 20
-    LEA     DI, STAFF_PASSWORD_INPUT
-    CALL    GET_STRING_INPUT
 
 ;------
     ; CALL    CLEAR_PROMPT
