@@ -141,7 +141,7 @@
                             DB      "|             DELETE ITEM MENU              |",CRLF
                             DB      "---------------------------------------------",CRLF, '$'
 
-    ITEM_ID_PROMPT          DB      CRLF,"Enter ITEM Name      : $"
+    ITEM_ID_PROMPT          DB      CRLF,"0 - Exit", CRLF, "Enter ITEM Name      : $"
 
     ; STOCK_REPORT
 	STOCK_REPORT_HEADER     DB      "-------------------------------------------------------", CRLF
@@ -558,6 +558,7 @@ MODIFY_ITEM_MENU_START:
     JE      MODIFY_QUANTITY
     CMP     SELECTED_OPTION, 33H
     JE      MODIFY_UNITPRICE
+    JMP     MODIFY_ITEM_MENU_START
 
 MODIFY_NAME:
     CALL    CLS
@@ -596,13 +597,17 @@ DELETE_MENU_START:
     CALL    CLS
     LEA     DX, DELETE_ITEM_LOGO
     CALL    PRINT
-
-    MOV     BX, OFFSET STRING_BUFFER
-    CALL    GET_STRING_INPUT
-    LEA     DX, STRING_BUFFER
+    LEA     DX, ITEM_ID_PROMPT
     CALL    PRINT
+    CALL    GET_CHAR_INPUT
+    MOV     SELECTED_OPTION, AL
+    CMP     SELECTED_OPTION, 30H
+    JE      DELETE_MENU_END
+; LOGIC TO DELETE
+
     JMP     DELETE_MENU_START
-    RET
+
+DELETE_MENU_END:
 DELETE_ITEM_MENU ENDP
 
 ; VIEW_REPORT_MENU
