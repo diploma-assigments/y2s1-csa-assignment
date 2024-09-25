@@ -127,78 +127,72 @@ STAFF_LOGIN PROC NEAR
     LEA     DI, COMPARE_STRING1     ; set compare string 1 = staff_id_input
     CALL    COPY_STRING
 
-    MOV     CX, 4
-    STAFF_LOGIN_CHECK_ID_LOOP:
-            CMP     CX, 0
-            JE      STAFF_LOGIN_CHECK_ID_1
-            CMP     CX, 1
-            JE      STAFF_LOGIN_CHECK_ID_2
-            CMP     CX, 2
-            JE      STAFF_LOGIN_CHECK_ID_3
-            CMP     CX, 3
-            JE      STAFF_LOGIN_CHECK_ID_4
-            
-            STAFF_LOGIN_CHECK_ID_1:
-            LEA     SI, STAFF_SLOT_1_ID
-            JMP     STAFF_LOGIN_CHECK_ID
-            STAFF_LOGIN_CHECK_ID_2:
-            LEA     SI, STAFF_SLOT_2_ID
-            JMP     STAFF_LOGIN_CHECK_ID
-            STAFF_LOGIN_CHECK_ID_3:
-            LEA     SI, STAFF_SLOT_3_ID
-            JMP     STAFF_LOGIN_CHECK_ID
-            STAFF_LOGIN_CHECK_ID_4:
-            LEA     SI, STAFF_SLOT_4_ID
-            JMP     STAFF_LOGIN_CHECK_ID
+    ; staff slot 1
+    LEA     SI, STAFF_SLOT_1_ID
+    LEA     DI, COMPARE_STRING2  
+    CALL    COPY_STRING
+    CALL    COMPARE_STRINGS
+    CMP     AL, 1                   
+    JE      STAFF_LOGIN_CHECK_PASSWORD
+    ; staff slot 2
+    LEA     SI, STAFF_SLOT_2_ID
+    LEA     DI, COMPARE_STRING2     
+    CALL    COPY_STRING
+    CALL    COMPARE_STRINGS
+    CMP     AL, 1                   
+    JE      STAFF_LOGIN_CHECK_PASSWORD
+    ; staff slot 3
+    LEA     SI, STAFF_SLOT_3_ID
+    LEA     DI, COMPARE_STRING2     
+    CALL    COPY_STRING
+    CALL    COMPARE_STRINGS
+    CMP     AL, 1                   
+    JE      STAFF_LOGIN_CHECK_PASSWORD
+    ; staff slot 4
+    LEA     SI, STAFF_SLOT_4_ID
+    LEA     DI, COMPARE_STRING2     
+    CALL    COPY_STRING
+    CALL    COMPARE_STRINGS
+    CMP     AL, 1                   
+    JE      STAFF_LOGIN_CHECK_PASSWORD
 
-        STAFF_LOGIN_CHECK_ID:
-            LEA     DI, COMPARE_STRING2     ; set compare string 2 = staff slot 1
-            CALL    COPY_STRING
-            CALL    COMPARE_STRINGS
-            CMP     AL, 1                   ; if staff slot 1 id == input
-            JE      STAFF_LOGIN_CHECK_PASSWORD_LOOP
-
-            LOOP    STAFF_LOGIN_CHECK_ID_LOOP
     JMP     STAFF_LOGIN_CREDENTIALS_INVALID
 
-
     ; Check if staff password is valid
+    STAFF_LOGIN_CHECK_PASSWORD:
     LEA     SI, STAFF_PASSWORD_INPUT
-    LEA     DI, COMPARE_STRING1     ; set compare string 1 = staff_id_input
+    LEA     DI, COMPARE_STRING1     ; set compare string 1 = staff_password_input
     CALL    COPY_STRING
 
-    MOV     CX, 4
-    STAFF_LOGIN_CHECK_PASSWORD_LOOP:
-            CMP     CX, 0
-            JE      STAFF_LOGIN_CHECK_PASSWORD_1
-            CMP     CX, 1
-            JE      STAFF_LOGIN_CHECK_PASSWORD_2
-            CMP     CX, 2
-            JE      STAFF_LOGIN_CHECK_PASSWORD_3
-            CMP     CX, 3
-            JE      STAFF_LOGIN_CHECK_PASSWORD_4
-            
-            STAFF_LOGIN_CHECK_PASSWORD_1:
-            LEA     SI, STAFF_SLOT_1_PASSWORD
-            JMP     STAFF_LOGIN_CHECK_PASSWORD
-            STAFF_LOGIN_CHECK_PASSWORD_2:
-            LEA     SI, STAFF_SLOT_2_PASSWORD
-            JMP     STAFF_LOGIN_CHECK_PASSWORD
-            STAFF_LOGIN_CHECK_PASSWORD_3:
-            LEA     SI, STAFF_SLOT_3_PASSWORD
-            JMP     STAFF_LOGIN_CHECK_PASSWORD
-            STAFF_LOGIN_CHECK_PASSWORD_4:
-            LEA     SI, STAFF_SLOT_4_PASSWORD
-            JMP     STAFF_LOGIN_CHECK_PASSWORD
+    ; staff 1
+    LEA     SI, STAFF_SLOT_1_PASSWORD
+    LEA     DI, COMPARE_STRING2 
+    CALL    COPY_STRING
+    CALL    COMPARE_STRINGS
+    CMP     AL, 1                  
+    JE      STAFF_LOGIN_CREDENTIALS_VALID
+    ; staff 2
+    LEA     SI, STAFF_SLOT_1_PASSWORD
+    LEA     DI, COMPARE_STRING2 
+    CALL    COPY_STRING
+    CALL    COMPARE_STRINGS
+    CMP     AL, 1                  
+    JE      STAFF_LOGIN_CREDENTIALS_VALID
+    ; staff 3
+    LEA     SI, STAFF_SLOT_1_PASSWORD
+    LEA     DI, COMPARE_STRING2 
+    CALL    COPY_STRING
+    CALL    COMPARE_STRINGS
+    CMP     AL, 1                  
+    JE      STAFF_LOGIN_CREDENTIALS_VALID
+    ; staff 4
+    LEA     SI, STAFF_SLOT_1_PASSWORD
+    LEA     DI, COMPARE_STRING2 
+    CALL    COPY_STRING
+    CALL    COMPARE_STRINGS
+    CMP     AL, 1                  
+    JE      STAFF_LOGIN_CREDENTIALS_VALID
 
-        STAFF_LOGIN_CHECK_PASSWORD:
-            LEA     DI, COMPARE_STRING2     ; set compare string 2 = staff slot 1
-            CALL    COPY_STRING
-            CALL    COMPARE_STRINGS
-            CMP     AL, 1                   ; if staff slot 1 password == input
-            JE      STAFF_LOGIN_CREDENTIALS_VALID
-
-            LOOP    STAFF_LOGIN_CHECK_PASSWORD_LOOP
     JMP     STAFF_LOGIN_CREDENTIALS_INVALID
 
     STAFF_LOGIN_CREDENTIALS_VALID:
