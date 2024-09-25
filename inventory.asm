@@ -188,14 +188,4 @@ CLS PROC NEAR
     RET
 CLS ENDP
 
-;==========================================================================================================
-; Write to file (Function 40h)
-WRITE_TO_FILE PROC NEAR
-    mov ah, 40h            ; Write to file
-    mov bx, filehandle     ; File handle
-    lea dx, buffer         ; DS:DX -> Buffer
-    mov cx, buffersize     ; Number of bytes to write
-    int 21h                ; DOS interrupt
-    jc error               ; Jump if carry flag is set (error)
-WRITE_TO_FILE ENDP
 END MAIN
